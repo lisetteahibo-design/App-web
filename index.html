@@ -1,0 +1,2588 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TRS Transactions — Eden Capital</title>
+<meta name="description" content="Suivi des opérations de cession NPL, mandats de recouvrement et Total Return Swaps." />
+<meta name="theme-color" content="#0b1c2c" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b1c2c'/%3E%3Ctext x='50' y='68' font-family='Arial' font-size='46' font-weight='700' fill='%23f4f6f8' text-anchor='middle'%3ETRS%3C/text%3E%3C/svg%3E" />
+<style>
+:root {
+  --background: #f4f6f8;
+  --foreground: #0b1c2c;
+  --card: #ffffff;
+  --primary: #15304f;
+  --primary-foreground: #f7f9fb;
+  --muted: #e8ecf1;
+  --muted-foreground: #5c6773;
+  --accent: #dce3eb;
+  --border: #d4dbe3;
+  --navy: #15304f;
+  --navy-soft: #1e4568;
+  --success: #2c5a4a;
+  --success-bg: #eef5f1;
+  --warning: #8b6914;
+  --warning-bg: #f7f1e0;
+  --danger: #8a3b3b;
+  --danger-bg: #f8ecec;
+  --info: #2a4a68;
+  --info-bg: #e8eef4;
+  --sidebar: #0b1c2c;
+  --sidebar-foreground: #f4f6f8;
+  --sidebar-muted: #8a97a6;
+  --sidebar-border: #1a3348;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-border: 0 0 0 1px rgba(11,28,44,.06), 0 1px 2px -1px rgba(11,28,44,.06), 0 2px 4px 0 rgba(11,28,44,.04);
+  --shadow-border-hover: 0 0 0 1px rgba(11,28,44,.1), 0 1px 2px -1px rgba(11,28,44,.08), 0 2px 8px 0 rgba(11,28,44,.06);
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Outfit", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -.03em; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; text-wrap: pretty; }
+ul, ol, dl { margin: 0; padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+table { border-collapse: collapse; width: 100%; }
+img, svg { max-width: 100%; }
+
+/* ---------- utilities ---------- */
+.eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: var(--muted-foreground); }
+.muted { color: var(--muted-foreground); }
+.mono { font-family: var(--font-mono); font-size: 12px; }
+.num { font-variant-numeric: tabular-nums; }
+.t-success { color: var(--success); }
+.t-warning { color: var(--warning); }
+.t-danger { color: var(--danger); }
+.h1 { font-family: var(--font-display); font-size: 34px; margin-top: 4px; }
+.h2 { font-family: var(--font-display); font-size: 22px; }
+.h3 { font-family: var(--font-display); font-size: 18px; }
+.stack { display: flex; flex-direction: column; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; } .gap-8 { gap: 32px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.between { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between; }
+.grid { display: grid; gap: 12px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+.right { text-align: right; }
+.hidden { display: none !important; }
+
+/* ---------- layout ---------- */
+.app { min-height: 100dvh; }
+.sidebar {
+  position: fixed; inset: 0 auto 0 0; width: 256px; z-index: 40;
+  display: flex; flex-direction: column;
+  background: var(--sidebar); color: var(--sidebar-foreground);
+}
+.brand { display: block; padding: 24px 20px 20px; }
+.brand svg { width: 100%; height: auto; color: var(--sidebar-foreground); display: block; }
+.brand-sub {
+  display: block; margin-top: 12px; padding-top: 12px; text-align: center;
+  border-top: 1px solid var(--sidebar-border);
+  font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .18em; color: var(--sidebar-muted);
+}
+.nav { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; flex: 1; }
+.nav a {
+  display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px;
+  border-radius: var(--radius-sm); color: var(--sidebar-muted); font-size: 14px; transition: background .15s, color .15s;
+}
+.nav a:hover { background: rgba(244,246,248,.06); color: var(--sidebar-foreground); }
+.nav a.active { background: rgba(244,246,248,.12); color: var(--sidebar-foreground); }
+.nav svg { width: 16px; height: 16px; flex: none; }
+.sidebar-footer { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.sidebar-footer .btn-light { background: var(--sidebar-foreground); color: var(--sidebar); }
+.sidebar-footer .btn-light:hover { background: #e2e7ec; }
+.sidebar-tools { display: flex; gap: 6px; }
+.sidebar-tools button {
+  flex: 1; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--sidebar-border);
+  background: transparent; color: var(--sidebar-muted); font-size: 12px; font-family: inherit;
+}
+.sidebar-tools button:hover { color: var(--sidebar-foreground); border-color: var(--sidebar-muted); }
+.mobile-header { display: none; }
+.content { padding-left: 256px; }
+main { max-width: 1120px; margin: 0 auto; padding: 32px; }
+.scrim { position: fixed; inset: 0; background: rgba(11,28,44,.5); z-index: 35; }
+
+@media (max-width: 900px) {
+  .content { padding-left: 0; }
+  main { padding: 20px 16px 48px; }
+  .sidebar { transform: translateX(-100%); transition: transform .2s ease; }
+  body.menu-open .sidebar { transform: translateX(0); }
+  .mobile-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 30;
+  }
+  .mobile-header .title { font-size: 11px; text-transform: uppercase; letter-spacing: .18em; font-weight: 500; }
+  .g2 { grid-template-columns: 1fr; }
+}
+
+/* ---------- cards ---------- */
+.card { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-border); }
+.card-pad { padding: 20px; }
+.card-head { padding: 20px 20px 0; }
+.card-title { font-family: var(--font-display); font-size: 16px; font-weight: 500; }
+a.card:hover { box-shadow: var(--shadow-border-hover); }
+.tile { border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 12px 16px; }
+.node { background: rgba(232,236,241,.7); border-radius: var(--radius-md); padding: 12px 16px; }
+
+/* ---------- badges ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px;
+  border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.badge.success { background: var(--success-bg); color: var(--success); }
+.badge.warning { background: var(--warning-bg); color: var(--warning); }
+.badge.danger  { background: var(--danger-bg);  color: var(--danger); }
+.badge.info    { background: var(--info-bg);    color: var(--info); }
+.badge.outline { background: transparent; border: 1px solid var(--border); color: var(--muted-foreground); }
+
+/* ---------- controls ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 40px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--primary); color: var(--primary-foreground);
+  font-family: inherit; font-size: 14px; font-weight: 500; transition: background .15s, box-shadow .15s;
+}
+.btn:hover { background: var(--navy-soft); }
+.btn:disabled { opacity: .6; cursor: default; }
+.btn.sm { height: 34px; padding: 0 12px; font-size: 13px; }
+.btn.outline { background: var(--card); color: var(--foreground); border-color: var(--border); }
+.btn.outline:hover { background: var(--muted); }
+.btn.ghost { background: transparent; color: var(--foreground); }
+.btn.ghost:hover { background: var(--muted); }
+.btn svg { width: 15px; height: 15px; }
+
+input, select, textarea {
+  width: 100%; font-family: inherit; font-size: 14px; color: var(--foreground);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 0 10px; height: 40px;
+}
+textarea { padding: 8px 10px; height: auto; line-height: 1.5; resize: vertical; }
+select { appearance: none; padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235c6773' stroke-width='1.5'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--navy); outline-offset: -1px; border-color: var(--navy); }
+label.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+label.field > span { font-weight: 500; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+.check input { width: 18px; height: 18px; accent-color: var(--primary); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.seg button {
+  height: 40px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid transparent;
+  background: var(--card); color: var(--foreground); font-family: inherit; font-size: 14px;
+  box-shadow: var(--shadow-border);
+}
+.seg button:hover { background: var(--muted); }
+.seg button.on { background: var(--primary); color: var(--primary-foreground); box-shadow: none; }
+
+/* ---------- tabs ---------- */
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; background: var(--muted); padding: 4px; border-radius: var(--radius-md); }
+.tabs button {
+  height: 34px; padding: 0 12px; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted-foreground); font-family: inherit; font-size: 13px; font-weight: 500;
+}
+.tabs button.on { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-border); }
+.tabs-mobile { display: none; }
+@media (max-width: 900px) {
+  .tabs { display: none; }
+  .tabs-mobile { display: block; }
+}
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-border); }
+table th {
+  text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .14em;
+  color: var(--muted-foreground); padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table tr:last-child td { border-bottom: 0; }
+
+/* ---------- misc ---------- */
+.progress { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+.progress > div { height: 100%; background: var(--primary); border-radius: 999px; }
+.list-card {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-border); padding: 12px 16px;
+}
+.divided > li { border-bottom: 1px solid var(--border); }
+.divided > li:last-child { border-bottom: 0; }
+.arrow { color: var(--muted-foreground); display: flex; align-items: center; justify-content: center; }
+.split { display: grid; gap: 24px; grid-template-columns: minmax(0,3fr) minmax(280px,2fr); align-items: start; }
+.split-side { display: grid; gap: 16px; grid-template-columns: minmax(220px,260px) minmax(0,1fr); align-items: start; }
+.flow { display: grid; gap: 12px; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; }
+.op-metrics { display: grid; gap: 12px 32px; grid-template-columns: repeat(3, minmax(0,1fr)); min-width: 280px; }
+.form-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); }
+@media (max-width: 1000px) {
+  .split, .split-side, .flow { grid-template-columns: 1fr; }
+  .flow .arrow { justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+  .op-metrics { grid-template-columns: repeat(2, minmax(0,1fr)); min-width: 0; }
+  .g3, .g4 { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 1000px) { .arrow { transform: rotate(90deg); } }
+
+/* toast */
+#toasts { position: fixed; right: 16px; bottom: 16px; z-index: 90; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--sidebar); color: var(--sidebar-foreground); padding: 10px 14px;
+  border-radius: var(--radius-md); font-size: 13px; box-shadow: 0 6px 20px rgba(11,28,44,.25); max-width: 320px;
+}
+.toast.err { background: var(--danger); }
+
+/* modal */
+#modal-root { position: fixed; inset: 0; z-index: 80; display: none; }
+#modal-root.on { display: block; }
+.modal-scrim { position: absolute; inset: 0; background: rgba(11,28,44,.45); }
+.modal {
+  position: relative; margin: 5vh auto; max-width: 560px; width: calc(100% - 32px); max-height: 90vh; overflow-y: auto;
+  background: var(--card); border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 20px 60px rgba(11,28,44,.3);
+}
+.modal.wide { max-width: 760px; }
+.modal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: var(--radius-sm); background: transparent; font-size: 18px; color: var(--muted-foreground); }
+.modal-close:hover { background: var(--muted); }
+
+/* letter */
+.letter { background: var(--card); padding: 40px 32px; border-radius: var(--radius-lg); box-shadow: var(--shadow-border); }
+.letter p { margin-bottom: 12px; line-height: 1.7; white-space: pre-wrap; }
+
+@media print {
+  .no-print, .sidebar, .mobile-header, .modal-scrim, .modal-close { display: none !important; }
+  body { background: #fff; }
+  .content { padding: 0; }
+  .modal { margin: 0; max-width: none; width: 100%; box-shadow: none; padding: 0; overflow: visible; max-height: none; }
+  .letter { box-shadow: none; padding: 0; }
+  #modal-root { position: static; }
+}
+
+.fade-in { animation: fade .18s ease both; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#/" data-nav>
+      <svg viewBox="0 0 1160 360" role="img" aria-label="EDEN Capital" fill="currentColor">
+        <g transform="translate(140,235)">
+          <ellipse cx="-58" cy="18" rx="62" ry="40" transform="rotate(-6 -58 18)"/>
+          <ellipse cx="58" cy="18" rx="62" ry="40" transform="rotate(6 58 18)"/>
+        </g>
+        <rect x="130" y="150" width="20" height="72"/>
+        <g transform="translate(140,150)">
+          <ellipse cx="0" cy="-58" rx="14" ry="42"/>
+          <ellipse cx="-22" cy="-55" rx="13" ry="40" transform="rotate(-14 -22 -55)"/>
+          <ellipse cx="22" cy="-55" rx="13" ry="40" transform="rotate(14 22 -55)"/>
+          <ellipse cx="-42" cy="-46" rx="12" ry="36" transform="rotate(-28 -42 -46)"/>
+          <ellipse cx="42" cy="-46" rx="12" ry="36" transform="rotate(28 42 -46)"/>
+          <ellipse cx="-60" cy="-32" rx="11" ry="32" transform="rotate(-42 -60 -32)"/>
+          <ellipse cx="60" cy="-32" rx="11" ry="32" transform="rotate(42 60 -32)"/>
+          <ellipse cx="-76" cy="-14" rx="10" ry="28" transform="rotate(-58 -76 -14)"/>
+          <ellipse cx="76" cy="-14" rx="10" ry="28" transform="rotate(58 76 -14)"/>
+          <ellipse cx="-88" cy="6" rx="9" ry="24" transform="rotate(-74 -88 6)"/>
+          <ellipse cx="88" cy="6" rx="9" ry="24" transform="rotate(74 88 6)"/>
+          <ellipse cx="-95" cy="26" rx="8" ry="19" transform="rotate(-88 -95 26)"/>
+          <ellipse cx="95" cy="26" rx="8" ry="19" transform="rotate(88 95 26)"/>
+        </g>
+        <text x="300" y="228" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="220" letter-spacing="2">EDEN</text>
+        <text x="330" y="330" font-family="Arial, Helvetica, sans-serif" font-weight="300" font-size="44" letter-spacing="13">CAPITAL</text>
+      </svg>
+      <span class="brand-sub">TRS Transactions</span>
+    </a>
+
+    <nav class="nav" id="nav"></nav>
+
+    <div class="sidebar-footer">
+      <a class="btn btn-light" href="#/operations/new" data-nav>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+        Nouvelle opération
+      </a>
+      <div class="sidebar-tools">
+        <button type="button" data-action="export-data">Exporter</button>
+        <button type="button" data-action="import-data">Importer</button>
+        <button type="button" data-action="reset-data">Réinit.</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="scrim hidden" id="scrim"></div>
+
+  <div class="content">
+    <header class="mobile-header no-print">
+      <button type="button" class="btn ghost" id="menu-btn" aria-label="Ouvrir le menu">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+      </button>
+      <a href="#/" class="title" data-nav>TRS Transactions</a>
+      <a href="#/operations/new" class="btn ghost" aria-label="Nouvelle opération" data-nav>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+      </a>
+    </header>
+    <main id="view"></main>
+  </div>
+</div>
+
+<div id="modal-root" aria-hidden="true"></div>
+<div id="toasts" aria-live="polite"></div>
+<input type="file" id="import-file" accept="application/json" class="hidden" />
+<script>
+"use strict";
+/* =========================================================================
+   TRS Transactions — application autonome (aucun serveur, aucune dépendance).
+   Les données sont conservées dans le navigateur (localStorage) et peuvent
+   être exportées / importées en JSON.
+   ========================================================================= */
+
+/* ------------------------------ Référentiel ------------------------------ */
+
+const OPERATION_STATUS_LABEL = {
+  structuration: "Structuration",
+  active: "Active",
+  cloture: "Clôture",
+  archive: "Archivée",
+};
+
+const STRUCTURE_LABEL = {
+  trs_npl: "Cession NPL + TRS",
+  cession_npl: "Cession NPL",
+  autre: "Autre structure",
+};
+
+const LOAN_STATUSES = ["performing", "watch", "npl", "default", "recovered", "prepaid", "litigated"];
+
+const LOAN_STATUS_LABEL = {
+  performing: "Sain",
+  watch: "Surveillance",
+  npl: "NPL",
+  default: "Défaut",
+  recovered: "Recouvré",
+  prepaid: "Anticipé",
+  litigated: "Contentieux",
+};
+
+const CASH_KIND_LABEL = {
+  collection: "Encaissement",
+  reversion: "Reversement acquéreur",
+  swap_payment: "Échéance investisseur",
+  collateral_topup: "Alimentation collatéral",
+  collateral_draw: "Prélèvement collatéral",
+  instruction: "Instruction de virement",
+};
+
+const CASH_STATUS_LABEL = {
+  scheduled: "Planifié",
+  instructed: "Instruit",
+  executed: "Exécuté",
+  confirmed: "Confirmé",
+  missed: "Manqué",
+};
+
+const CALENDAR_KIND_LABEL = {
+  report_request: "Demande de reporting",
+  report_due: "Rapport trimestriel",
+  instruction_window: "Fenêtre d'instruction",
+  payment_due: "Échéance semestrielle",
+  monthly_watch: "Surveillance mensuelle",
+};
+
+const CALENDAR_STATUS_META = {
+  upcoming: { variant: "", label: "À venir" },
+  due_soon: { variant: "warning", label: "Imminent" },
+  overdue: { variant: "danger", label: "En retard" },
+  done: { variant: "success", label: "Fait" },
+  skipped: { variant: "", label: "Ignoré" },
+};
+
+const REPORT_STATUS_LABEL = {
+  draft: "Brouillon",
+  submitted: "Soumis",
+  validated: "Validé",
+  archived: "Archivé",
+};
+
+const INSTRUCTION_STATUS_LABEL = {
+  draft: "Brouillon",
+  sent: "Transmise",
+  executed: "Exécutée",
+  archived: "Archivée",
+};
+
+const STEP_STATUS_LABEL = { pending: "À faire", in_progress: "En cours", done: "Terminé" };
+
+const OP_VARIANT = { active: "success", structuration: "info", cloture: "warning", archive: "" };
+const LOAN_VARIANT = {
+  performing: "success", recovered: "success", prepaid: "success",
+  watch: "warning", npl: "danger", default: "danger", litigated: "info",
+};
+const CASH_VARIANT = {
+  confirmed: "success", executed: "success", instructed: "info", scheduled: "", missed: "danger",
+};
+
+const PROCEDURE_STEPS = [
+  { n: 1, title: "Identification du portefeuille de créances à céder", actor: "Banque cédante" },
+  { n: 2, title: "Validation du portefeuille de créances", actor: "SPV acquéreur" },
+  { n: 3, title: "Acte de cession et notifications aux débiteurs", actor: "Cabinet juridique" },
+  { n: 4, title: "Convention de gestion et de recouvrement", actor: "Cabinet juridique" },
+  { n: 5, title: "Mandat de gestion, d'administration et de recouvrement", actor: "SPV acquéreur" },
+  { n: 6, title: "Encaissement au nom et pour le compte de l'acquéreur", actor: "Banque cédante" },
+  { n: 7, title: "Reversement semestriel des sommes recouvrées (30 avr. / 31 oct.)", actor: "Banque cédante" },
+  { n: 8, title: "Surveillance mensuelle du portefeuille", actor: "Banque cédante" },
+  { n: 9, title: "Reporting complet (mars, juin, octobre, décembre)", actor: "Banque cédante" },
+  { n: 10, title: "Élaboration des rapports de gestion", actor: "Banque cédante" },
+  { n: 11, title: "Évaluation des résultats du portefeuille", actor: "SPV acquéreur" },
+  { n: 12, title: "Validation et archivage des rapports", actor: "SPV acquéreur" },
+];
+
+const PILLARS = [
+  {
+    id: "convention",
+    title: "Établissement de la convention",
+    body: "Identification du portefeuille, note de faisabilité, acte de cession et mandat de recouvrement.",
+  },
+  {
+    id: "gestion",
+    title: "Gestion et reporting",
+    body: "Suivi mensuel, reporting le dernier jour ouvré de mars, juin, octobre et décembre. Notification J-5 par l'acquéreur.",
+  },
+  {
+    id: "recouvrement",
+    title: "Recouvrement et flux",
+    body: "Encaissement par la banque mandataire, reversement intégral sur le compte de l'acquéreur, virement vers l'investisseur.",
+  },
+  {
+    id: "echeances",
+    title: "Échéances semestrielles",
+    body: "Lettre d'instruction 10 à 15 jours ouvrés avant le 30 avril et le 31 octobre. Rapprochement relevé / tableau d'amortissement.",
+  },
+  {
+    id: "rapports",
+    title: "Rapports de gestion",
+    body: "Rentabilité, risque, défauts, performance vs prévisions, détail par emprunt. Validation et archivage par l'acquéreur.",
+  },
+];
+
+/* ------------------------------- Formatage ------------------------------- */
+
+const nf0 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+
+function money(amount, currency) {
+  const n = Number.isFinite(amount) ? amount : 0;
+  const formatted = nf0.format(Math.round(n));
+  return (currency || "XOF") === "XOF" ? formatted + " F CFA" : formatted + " " + currency;
+}
+
+function moneyCompact(amount) {
+  const n = Number.isFinite(amount) ? amount : 0;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "−" : "";
+  if (abs >= 1e9) return sign + (abs / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " Md";
+  if (abs >= 1e6) return sign + (abs / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " M";
+  return money(n);
+}
+
+function pct(value, digits) {
+  const d = digits == null ? 1 : digits;
+  return (value * 100).toLocaleString("fr-FR", { maximumFractionDigits: d, minimumFractionDigits: d }) + " %";
+}
+
+function pctPoints(value, digits) {
+  const d = digits == null ? 1 : digits;
+  return value.toLocaleString("fr-FR", { maximumFractionDigits: d, minimumFractionDigits: d }) + " %";
+}
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  const d = parseIsoDate(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatDateLong(iso) {
+  if (!iso) return "—";
+  const d = parseIsoDate(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function coverageTone(actual, required) {
+  if (required <= 0) return "ok";
+  const r = actual / required;
+  if (r >= 1) return "ok";
+  if (r >= 0.98) return "watch";
+  return "short";
+}
+
+function toneClass(tone) {
+  return tone === "short" ? "t-danger" : tone === "watch" ? "t-warning" : "t-success";
+}
+
+function parseNum(v) {
+  const n = Number(String(v == null ? "" : v).replace(/\s/g, "").replace(/ /g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function esc(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function uid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+
+/* --------------------------- Dates et calendrier -------------------------- */
+
+const SENEGAL_FIXED_HOLIDAYS = ["01-01", "04-04", "05-01", "08-15", "11-01", "12-25"];
+
+function toIsoDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function parseIsoDate(iso) {
+  const parts = String(iso).slice(0, 10).split("-").map(Number);
+  return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+}
+
+function todayIso() {
+  return toIsoDate(new Date());
+}
+
+function isHoliday(d) {
+  const key = String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return SENEGAL_FIXED_HOLIDAYS.indexOf(key) !== -1;
+}
+
+function isBusinessDay(d) {
+  const day = d.getDay();
+  if (day === 0 || day === 6) return false;
+  return !isHoliday(d);
+}
+
+function addBusinessDays(from, n) {
+  const step = n >= 0 ? 1 : -1;
+  let remaining = Math.abs(n);
+  const cur = new Date(from);
+  while (remaining > 0) {
+    cur.setDate(cur.getDate() + step);
+    if (isBusinessDay(cur)) remaining -= 1;
+  }
+  return cur;
+}
+
+function previousBusinessDay(d) {
+  const cur = new Date(d);
+  while (!isBusinessDay(cur)) cur.setDate(cur.getDate() - 1);
+  return cur;
+}
+
+function lastBusinessDayOfMonth(year, monthIndex) {
+  return previousBusinessDay(new Date(year, monthIndex + 1, 0));
+}
+
+function daysUntil(iso, today) {
+  const target = parseIsoDate(iso);
+  const t = today ? new Date(today) : new Date();
+  t.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - t.getTime()) / 86400000);
+}
+
+function delayLabel(iso) {
+  const n = daysUntil(iso);
+  return n < 0 ? " · " + Math.abs(n) + " j de retard" : " · dans " + n + " j";
+}
+
+function refreshCalendarStatus(dueDate, stored) {
+  if (stored === "done") return "done";
+  if (stored === "skipped") return "skipped";
+  const n = daysUntil(dueDate);
+  if (n < 0) return "overdue";
+  if (n <= 14) return "due_soon";
+  return "upcoming";
+}
+
+/** Dates contractuelles semestrielles : 30 avril et 31 octobre. */
+function semiAnnualDates(from, to) {
+  const out = [];
+  let year = from.getFullYear();
+  const endYear = to.getFullYear();
+  while (year <= endYear) {
+    [[3, 30], [9, 31]].forEach(function (md) {
+      const d = new Date(year, md[0], md[1]);
+      if (d >= from && d <= to) out.push(d);
+    });
+    year += 1;
+  }
+  return out;
+}
+
+/** Amortissement linéaire semestriel du prêt investisseur (base 180 / dayCount). */
+function investorAmortization(op) {
+  const dates = semiAnnualDates(parseIsoDate(op.effectiveDate), parseIsoDate(op.expiryDate));
+  if (dates.length === 0) return [];
+  const n = dates.length;
+  const principalEach = Math.round(op.investorOriginal / n);
+  const basis = Number(op.dayCount) || 360;
+  let remaining = op.investorOriginal;
+  return dates.map(function (d, i) {
+    const principal = i === n - 1 ? remaining : Math.min(principalEach, remaining);
+    const interest = Math.round(remaining * op.swapRate * (180 / basis));
+    remaining = Math.max(0, remaining - principal);
+    return {
+      dueDate: toIsoDate(d),
+      principal: principal,
+      interest: interest,
+      amount: principal + interest,
+      remainingAfter: remaining,
+      paid: op.investorOutstanding <= remaining,
+    };
+  });
+}
+
+const REPORT_MONTHS = [2, 5, 9, 11]; // mars, juin, octobre, décembre
+
+function generateCalendar(opts) {
+  const from = parseIsoDate(opts.effectiveDate);
+  const to = parseIsoDate(opts.expiryDate);
+  const items = [];
+
+  semiAnnualDates(from, to).forEach(function (d) {
+    items.push({
+      kind: "payment_due",
+      dueDate: toIsoDate(d),
+      title: "Échéance " + opts.acquirerSpv + " → " + opts.investorSpv,
+    });
+    items.push({
+      kind: "instruction_window",
+      dueDate: toIsoDate(addBusinessDays(d, -15)),
+      title: "Lettre d'instruction (J-15 à J-10)",
+    });
+  });
+
+  let y = from.getFullYear();
+  const endY = to.getFullYear();
+  while (y <= endY) {
+    REPORT_MONTHS.forEach(function (m) {
+      const due = lastBusinessDayOfMonth(y, m);
+      if (due >= from && due <= to) {
+        items.push({
+          kind: "report_due",
+          dueDate: toIsoDate(due),
+          title: "Rapport de gestion — " + due.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+        });
+        items.push({
+          kind: "report_request",
+          dueDate: toIsoDate(addBusinessDays(due, -5)),
+          title: "Notification reporting (J-5)",
+        });
+      }
+    });
+    y += 1;
+  }
+
+  const today = new Date();
+  const watchStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const watchHorizon = new Date(today.getFullYear(), today.getMonth() + 18, 1);
+  let cursor = lastBusinessDayOfMonth(watchStart.getFullYear(), watchStart.getMonth());
+  if (cursor < from) cursor = lastBusinessDayOfMonth(from.getFullYear(), from.getMonth());
+  const cap = watchHorizon < to ? watchHorizon : to;
+  while (cursor <= cap) {
+    items.push({
+      kind: "monthly_watch",
+      dueDate: toIsoDate(cursor),
+      title: "Surveillance mensuelle du portefeuille",
+    });
+    const next = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    cursor = lastBusinessDayOfMonth(next.getFullYear(), next.getMonth());
+  }
+
+  items.sort(function (a, b) { return a.dueDate.localeCompare(b.dueDate); });
+  return items;
+}
+
+function buildLetterBody(opts) {
+  const op = opts.operation;
+  return "Objet : Instruction de virement semestriel — Opération " + op.code + "\n\n" +
+    "À l'attention du Chargé de Clientèle — " + op.cedantBank + ".\n\n" +
+    "En notre qualité d'Acquéreur, et conformément à la convention de gestion et de recouvrement, nous vous prions de bien vouloir procéder au débit de notre compte ouvert dans vos livres pour effectuer le règlement suivant :\n\n" +
+    "- Montant : " + money(opts.amount, op.currency) + " (capital " + money(opts.principal, op.currency) +
+    " + intérêts " + money(opts.interest, op.currency) + ", base " + op.dayCount + " jours)\n" +
+    "- Bénéficiaire : " + op.investorSpv + " (SPV Investisseur)\n" +
+    "- Banque du bénéficiaire : " + (op.lenderBank || op.cedantBank) + "\n" +
+    "- Date d'exécution : " + formatDateLong(opts.dueDate);
+}
+
+/* --------------------------- Données de départ --------------------------- */
+
+function seedState() {
+  const steps = function (opId, prefix, spec) {
+    return PROCEDURE_STEPS.map(function (s) {
+      return {
+        id: prefix + "-" + s.n,
+        operationId: opId,
+        stepNo: s.n,
+        status: spec[s.n] || "pending",
+        completedAt: null,
+      };
+    });
+  };
+
+  const bsicSteps = { 1: "done", 2: "done", 3: "done", 4: "done", 5: "done", 6: "in_progress", 7: "in_progress", 8: "in_progress", 9: "in_progress", 10: "in_progress", 11: "in_progress", 12: "in_progress" };
+  const sahelSteps = { 1: "done", 2: "in_progress" };
+  const kayarSteps = {};
+  for (let i = 1; i <= 12; i++) kayarSteps[i] = "done";
+
+  return {
+    version: 1,
+    operations: [
+      {
+        id: "op-trs-bsic",
+        code: "TRS-BSIC-2025",
+        name: "Cession NPL BSIC — Total Return Swap",
+        status: "active",
+        structure: "trs_npl",
+        arranger: "Eden & MBG Capital",
+        cedantBank: "BSIC SA",
+        acquirerSpv: "LIGDI SAS",
+        investorSpv: "KARANGË SAS",
+        legalCounsel: "Cabinet Kaolack & Associés",
+        lenderBank: "BSIC SA",
+        effectiveDate: "2025-11-03",
+        expiryDate: "2030-11-03",
+        acquisitionPrice: 7500000000,
+        originalNominal: 12500000000,
+        discountPct: 40,
+        collateralRatio: 1.15,
+        swapRate: 0.085,
+        dayCount: "360",
+        currency: "XOF",
+        investorOriginal: 6500000000,
+        investorOutstanding: 5850000000,
+        collateralPledged: 7500000000,
+        notes: "Opération de référence du manuel de procédures. Cession NPL combinée à un échange de rendements. Collatéral nanti à 115 % de l'encours du prêt investisseur.",
+        createdAt: "2025-11-03T00:00:00.000Z",
+      },
+      {
+        id: "op-trs-sahel",
+        code: "TRS-SAHEL-2026",
+        name: "Cession NPL Banque Sahelienne de Crédit",
+        status: "structuration",
+        structure: "trs_npl",
+        arranger: "Eden & MBG Capital",
+        cedantBank: "Banque Sahelienne de Crédit",
+        acquirerSpv: "NIOKOLA SAS",
+        investorSpv: "FLEUVE SAS",
+        legalCounsel: "Cabinet Kaolack & Associés",
+        lenderBank: "Banque Sahelienne de Crédit",
+        effectiveDate: "2026-11-16",
+        expiryDate: "2031-11-16",
+        acquisitionPrice: 4200000000,
+        originalNominal: 7800000000,
+        discountPct: 46.15,
+        collateralRatio: 1.15,
+        swapRate: 0.09,
+        dayCount: "360",
+        currency: "XOF",
+        investorOriginal: 3800000000,
+        investorOutstanding: 3800000000,
+        collateralPledged: 4100000000,
+        notes: "Dossier en cours de structuration. Collatéral proposé sous le seuil de 115 % — à compléter avant closing.",
+        createdAt: "2026-07-01T00:00:00.000Z",
+      },
+      {
+        id: "op-trs-kayar",
+        code: "TRS-KAYAR-2021",
+        name: "Cession NPL Caisse de Kayar",
+        status: "archive",
+        structure: "trs_npl",
+        arranger: "Eden & MBG Capital",
+        cedantBank: "Caisse de Kayar",
+        acquirerSpv: "GOREE SAS",
+        investorSpv: "ALMADIES SAS",
+        legalCounsel: "Cabinet Kaolack & Associés",
+        lenderBank: "Caisse de Kayar",
+        effectiveDate: "2021-04-30",
+        expiryDate: "2026-04-30",
+        acquisitionPrice: 2100000000,
+        originalNominal: 3600000000,
+        discountPct: 41.67,
+        collateralRatio: 1.15,
+        swapRate: 0.08,
+        dayCount: "360",
+        currency: "XOF",
+        investorOriginal: 1900000000,
+        investorOutstanding: 0,
+        collateralPledged: 0,
+        notes: "Opération arrivée à échéance. Prêt investisseur remboursé. Portefeuille résiduel cédé.",
+        createdAt: "2021-04-30T00:00:00.000Z",
+      },
+    ],
+    loans: [
+      { id: "loan-bsic-01", operationId: "op-trs-bsic", reference: "EMP-2018-041", debtorLabel: "Négoce Céréales — ligne 041", originalPrincipal: 2400000000, outstandingPrincipal: 1100000000, interestRate: 0.09, status: "npl", nextDueDate: "2026-10-31", lastPaymentDate: "2026-04-28", lastPaymentAmount: 180000000, recoveredTotal: 1300000000, notes: "" },
+      { id: "loan-bsic-02", operationId: "op-trs-bsic", reference: "EMP-2019-102", debtorLabel: "Promo Immobilière — ligne 102", originalPrincipal: 3100000000, outstandingPrincipal: 2800000000, interestRate: 0.08, status: "default", nextDueDate: "2026-09-30", lastPaymentDate: "2025-12-15", lastPaymentAmount: 90000000, recoveredTotal: 300000000, notes: "Contentieux engagé sur les sûretés hypothécaires." },
+      { id: "loan-bsic-03", operationId: "op-trs-bsic", reference: "EMP-2020-017", debtorLabel: "Unité Coton — ligne 017", originalPrincipal: 1800000000, outstandingPrincipal: 400000000, interestRate: 0.085, status: "watch", nextDueDate: "2026-10-31", lastPaymentDate: "2026-07-12", lastPaymentAmount: 220000000, recoveredTotal: 1400000000, notes: "" },
+      { id: "loan-bsic-04", operationId: "op-trs-bsic", reference: "EMP-2020-088", debtorLabel: "Transport Logistique — ligne 088", originalPrincipal: 900000000, outstandingPrincipal: 0, interestRate: 0.075, status: "recovered", nextDueDate: null, lastPaymentDate: "2026-03-18", lastPaymentAmount: 140000000, recoveredTotal: 900000000, notes: "Soldé avant l'échéance d'avril." },
+      { id: "loan-bsic-05", operationId: "op-trs-bsic", reference: "EMP-2021-055", debtorLabel: "Agro-Industrie — ligne 055", originalPrincipal: 1600000000, outstandingPrincipal: 1200000000, interestRate: 0.09, status: "npl", nextDueDate: "2026-10-31", lastPaymentDate: "2026-04-30", lastPaymentAmount: 85000000, recoveredTotal: 400000000, notes: "" },
+      { id: "loan-bsic-06", operationId: "op-trs-bsic", reference: "EMP-2021-119", debtorLabel: "BTP Infrastructure — ligne 119", originalPrincipal: 1200000000, outstandingPrincipal: 900000000, interestRate: 0.08, status: "litigated", nextDueDate: "2026-11-15", lastPaymentDate: "2026-01-20", lastPaymentAmount: 50000000, recoveredTotal: 300000000, notes: "Assignation en cours." },
+      { id: "loan-bsic-07", operationId: "op-trs-bsic", reference: "EMP-2022-003", debtorLabel: "Distribution — ligne 003", originalPrincipal: 700000000, outstandingPrincipal: 450000000, interestRate: 0.07, status: "watch", nextDueDate: "2026-10-31", lastPaymentDate: "2026-06-30", lastPaymentAmount: 60000000, recoveredTotal: 250000000, notes: "" },
+      { id: "loan-bsic-08", operationId: "op-trs-bsic", reference: "EMP-2017-064", debtorLabel: "Hôtellerie — ligne 064", originalPrincipal: 800000000, outstandingPrincipal: 600000000, interestRate: 0.085, status: "default", nextDueDate: "2026-10-15", lastPaymentDate: "2025-10-31", lastPaymentAmount: 40000000, recoveredTotal: 200000000, notes: "" },
+      { id: "loan-sahel-01", operationId: "op-trs-sahel", reference: "BSC-2019-012", debtorLabel: "Agro-sahel — ligne 012", originalPrincipal: 2100000000, outstandingPrincipal: 1900000000, interestRate: 0.095, status: "npl", nextDueDate: null, lastPaymentDate: null, lastPaymentAmount: 0, recoveredTotal: 200000000, notes: "Portefeuille indicatif, due diligence en cours." },
+      { id: "loan-sahel-02", operationId: "op-trs-sahel", reference: "BSC-2020-044", debtorLabel: "Minière régionale — ligne 044", originalPrincipal: 2500000000, outstandingPrincipal: 2500000000, interestRate: 0.08, status: "default", nextDueDate: null, lastPaymentDate: null, lastPaymentAmount: 0, recoveredTotal: 0, notes: "" },
+      { id: "loan-sahel-03", operationId: "op-trs-sahel", reference: "BSC-2021-009", debtorLabel: "Négoce frontalier — ligne 009", originalPrincipal: 1800000000, outstandingPrincipal: 1500000000, interestRate: 0.09, status: "npl", nextDueDate: null, lastPaymentDate: null, lastPaymentAmount: 0, recoveredTotal: 300000000, notes: "" },
+      { id: "loan-sahel-04", operationId: "op-trs-sahel", reference: "BSC-2018-077", debtorLabel: "Immobilier tertiaire — ligne 077", originalPrincipal: 1400000000, outstandingPrincipal: 1200000000, interestRate: 0.085, status: "watch", nextDueDate: null, lastPaymentDate: null, lastPaymentAmount: 0, recoveredTotal: 200000000, notes: "" },
+    ],
+    cashEvents: [
+      { id: "cash-bsic-01", operationId: "op-trs-bsic", loanId: "loan-bsic-04", kind: "collection", amount: 140000000, eventDate: "2026-03-18", status: "confirmed", counterparty: "Transport Logistique — ligne 088", reference: "ENC-2026-0318", notes: "" },
+      { id: "cash-bsic-02", operationId: "op-trs-bsic", loanId: "loan-bsic-03", kind: "collection", amount: 220000000, eventDate: "2026-04-12", status: "confirmed", counterparty: "Unité Coton — ligne 017", reference: "ENC-2026-0412", notes: "" },
+      { id: "cash-bsic-03", operationId: "op-trs-bsic", loanId: "loan-bsic-01", kind: "collection", amount: 180000000, eventDate: "2026-04-28", status: "confirmed", counterparty: "Négoce Céréales — ligne 041", reference: "ENC-2026-0428", notes: "" },
+      { id: "cash-bsic-04", operationId: "op-trs-bsic", loanId: null, kind: "reversion", amount: 540000000, eventDate: "2026-04-30", status: "confirmed", counterparty: "LIGDI SAS", reference: "REV-2026-0430", notes: "Reversement intégral des encaissements du semestre." },
+      { id: "cash-bsic-05", operationId: "op-trs-bsic", loanId: null, kind: "swap_payment", amount: 926250000, eventDate: "2026-04-30", status: "confirmed", counterparty: "KARANGË SAS", reference: "ECH-2026-0430", notes: "Capital 650 M + intérêts 276,25 M (360 j)." },
+      { id: "cash-bsic-06", operationId: "op-trs-bsic", loanId: "loan-bsic-05", kind: "collection", amount: 85000000, eventDate: "2026-04-30", status: "confirmed", counterparty: "Agro-Industrie — ligne 055", reference: "ENC-2026-0430", notes: "" },
+      { id: "cash-bsic-07", operationId: "op-trs-bsic", loanId: "loan-bsic-07", kind: "collection", amount: 60000000, eventDate: "2026-06-30", status: "confirmed", counterparty: "Distribution — ligne 003", reference: "ENC-2026-0630", notes: "" },
+      { id: "cash-bsic-08", operationId: "op-trs-bsic", loanId: "loan-bsic-03", kind: "collection", amount: 95000000, eventDate: "2026-07-12", status: "confirmed", counterparty: "Unité Coton — ligne 017", reference: "ENC-2026-0712", notes: "" },
+      { id: "cash-bsic-09", operationId: "op-trs-bsic", loanId: null, kind: "collateral_topup", amount: 7500000000, eventDate: "2025-11-03", status: "confirmed", counterparty: "BSIC SA", reference: "COL-2025-1103", notes: "Compte nanti initial (115 % de 6,5 Md)." },
+      { id: "cash-bsic-10", operationId: "op-trs-bsic", loanId: null, kind: "swap_payment", amount: 898625000, eventDate: "2026-10-31", status: "scheduled", counterparty: "KARANGË SAS", reference: "ECH-2026-1031", notes: "Capital 650 M + intérêts 248,625 M. Instruction à préparer." },
+    ],
+    calendar: [
+      { id: "cal-bsic-01", operationId: "op-trs-bsic", kind: "report_due", dueDate: "2026-03-31", title: "Rapport de gestion — mars 2026", status: "done", completedAt: "2026-03-31T16:00:00.000Z" },
+      { id: "cal-bsic-02", operationId: "op-trs-bsic", kind: "instruction_window", dueDate: "2026-04-10", title: "Lettre d'instruction (J-15 à J-10)", status: "done", completedAt: "2026-04-14T10:00:00.000Z" },
+      { id: "cal-bsic-03", operationId: "op-trs-bsic", kind: "payment_due", dueDate: "2026-04-30", title: "Échéance LIGDI SAS → KARANGË SAS", status: "done", completedAt: "2026-04-30T11:30:00.000Z" },
+      { id: "cal-bsic-04", operationId: "op-trs-bsic", kind: "report_due", dueDate: "2026-06-30", title: "Rapport de gestion — juin 2026", status: "done", completedAt: "2026-06-30T17:00:00.000Z" },
+      { id: "cal-bsic-05", operationId: "op-trs-bsic", kind: "monthly_watch", dueDate: "2026-07-31", title: "Surveillance mensuelle du portefeuille", status: "done", completedAt: "2026-07-31T15:00:00.000Z" },
+      { id: "cal-bsic-06", operationId: "op-trs-bsic", kind: "monthly_watch", dueDate: "2026-08-31", title: "Surveillance mensuelle du portefeuille", status: "done", completedAt: "2026-08-31T16:20:00.000Z" },
+      { id: "cal-bsic-07", operationId: "op-trs-bsic", kind: "monthly_watch", dueDate: "2026-09-30", title: "Surveillance mensuelle du portefeuille", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-08", operationId: "op-trs-bsic", kind: "instruction_window", dueDate: "2026-10-12", title: "Lettre d'instruction (J-15 à J-10)", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-09", operationId: "op-trs-bsic", kind: "report_request", dueDate: "2026-10-23", title: "Notification reporting (J-5)", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-10", operationId: "op-trs-bsic", kind: "report_due", dueDate: "2026-10-30", title: "Rapport de gestion — octobre 2026", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-11", operationId: "op-trs-bsic", kind: "payment_due", dueDate: "2026-10-31", title: "Échéance LIGDI SAS → KARANGË SAS", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-12", operationId: "op-trs-bsic", kind: "report_due", dueDate: "2026-12-31", title: "Rapport de gestion — décembre 2026", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-13", operationId: "op-trs-bsic", kind: "monthly_watch", dueDate: "2026-10-30", title: "Surveillance mensuelle du portefeuille", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-14", operationId: "op-trs-bsic", kind: "monthly_watch", dueDate: "2026-11-30", title: "Surveillance mensuelle du portefeuille", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-15", operationId: "op-trs-bsic", kind: "instruction_window", dueDate: "2027-04-12", title: "Lettre d'instruction (J-15 à J-10)", status: "upcoming", completedAt: null },
+      { id: "cal-bsic-16", operationId: "op-trs-bsic", kind: "payment_due", dueDate: "2027-04-30", title: "Échéance LIGDI SAS → KARANGË SAS", status: "upcoming", completedAt: null },
+      { id: "cal-sahel-01", operationId: "op-trs-sahel", kind: "report_due", dueDate: "2026-09-15", title: "Note de faisabilité juridique", status: "upcoming", completedAt: null },
+      { id: "cal-sahel-02", operationId: "op-trs-sahel", kind: "monthly_watch", dueDate: "2026-09-30", title: "Comité de crédit — validation portefeuille", status: "upcoming", completedAt: null },
+    ],
+    reports: [
+      {
+        id: "rep-bsic-01", operationId: "op-trs-bsic", period: "2026-T1", reportDate: "2026-03-31",
+        riskSummary: "Deux lignes en défaut (Promo Immobilière, Hôtellerie). Sûretés hypothécaires en cours de réalisation. Ratio NPL du portefeuille cédé inchangé.",
+        repaymentStatus: "Encaissements T1 inférieurs au plan de 12 %. Ligne Transport Logistique soldée par anticipation.",
+        vsForecast: "Recouvrement 8 % sous le scénario de base. Couverture des échéances investisseur assurée par le collatéral.",
+        status: "validated", comments: "Validé par LIGDI SAS le 4 avril 2026.",
+      },
+      {
+        id: "rep-bsic-02", operationId: "op-trs-bsic", period: "2026-T2", reportDate: "2026-06-30",
+        riskSummary: "Stabilisation du profil. Contentieux BTP toujours ouvert. Pas de nouveau défaut.",
+        repaymentStatus: "Échéance du 30 avril exécutée. Encaissements T2 conformes après le solde coton.",
+        vsForecast: "Écart vs prévisions ramené à −3 %. Service de la dette couvert sans tirage collatéral.",
+        status: "validated", comments: "Commentaire LIGDI : maintenir la pression sur la ligne 102.",
+      },
+    ],
+    correspondences: [
+      { id: "corr-bsic-01", operationId: "op-trs-bsic", sentAt: "2026-03-24", channel: "email", direction: "outbound", subject: "Demande d'informations portefeuille — mars 2026", ackReceived: true, kind: "info_request", notes: "Accusé le jour même." },
+      { id: "corr-bsic-02", operationId: "op-trs-bsic", sentAt: "2026-04-14", channel: "registered_mail", direction: "outbound", subject: "Instruction de virement semestriel — 30 avril 2026", ackReceived: true, kind: "instruction", notes: "AR n° SN-2026-4412." },
+      { id: "corr-bsic-03", operationId: "op-trs-bsic", sentAt: "2026-04-30", channel: "email", direction: "inbound", subject: "Avis de débit + relevé — échéance 30 avril", ackReceived: true, kind: "notification", notes: "Liasse archivée." },
+      { id: "corr-bsic-04", operationId: "op-trs-bsic", sentAt: "2026-06-23", channel: "email", direction: "outbound", subject: "Demande d'informations portefeuille — juin 2026", ackReceived: true, kind: "info_request", notes: "" },
+      { id: "corr-bsic-05", operationId: "op-trs-bsic", sentAt: "2026-09-08", channel: "email", direction: "outbound", subject: "Point mensuel — préparation fenêtre d'octobre", ackReceived: false, kind: "other", notes: "En attente d'accusé." },
+    ],
+    instructions: [
+      {
+        id: "ins-bsic-01", operationId: "op-trs-bsic", dueDate: "2026-04-30", sentAt: "2026-04-14",
+        amount: 926250000, principal: 650000000, interest: 276250000,
+        beneficiary: "KARANGË SAS", beneficiaryBank: "BSIC SA", status: "executed", debitNotice: true,
+        body: "Objet : Instruction de virement semestriel — Opération TRS-BSIC-2025\n\nÀ l'attention du Chargé de Clientèle — BSIC SA.\n\nEn notre qualité d'Acquéreur, et conformément à la convention de gestion et de recouvrement, nous vous prions de bien vouloir procéder au débit de notre compte ouvert dans vos livres pour effectuer le règlement suivant :\n\n- Montant : 926 250 000 F CFA (capital 650 000 000 F CFA + intérêts 276 250 000 F CFA, base 360 jours)\n- Bénéficiaire : KARANGË SAS (SPV Investisseur)\n- Banque du bénéficiaire : BSIC SA\n- Date d'exécution : 30 avril 2026",
+      },
+    ],
+    steps: steps("op-trs-bsic", "ws-bsic", bsicSteps)
+      .concat(steps("op-trs-sahel", "ws-sahel", sahelSteps))
+      .concat(steps("op-trs-kayar", "ws-kayar", kayarSteps)),
+  };
+}
+
+/* -------------------------------- Store ---------------------------------- */
+
+const STORAGE_KEY = "trs-transactions-v1";
+const COLLECTIONS = ["operations", "loans", "cashEvents", "calendar", "reports", "correspondences", "instructions", "steps"];
+
+let state = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      COLLECTIONS.forEach(function (k) { if (!Array.isArray(parsed[k])) parsed[k] = []; });
+      return parsed;
+    }
+  } catch (err) {
+    console.warn("Données locales illisibles, réinitialisation.", err);
+  }
+  const fresh = seedState();
+  save(fresh);
+  return fresh;
+}
+
+function save(next) {
+  const data = next || state;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    toast("Sauvegarde locale impossible (stockage plein ou navigation privée).", true);
+  }
+}
+
+function commit(message) {
+  save();
+  render();
+  if (message) toast(message);
+}
+
+/* ------------------------------- Sélecteurs ------------------------------ */
+
+const STATUS_ORDER = { active: 0, structuration: 1, cloture: 2, archive: 3 };
+
+function operationsSorted() {
+  return state.operations.slice().sort(function (a, b) {
+    const d = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+    if (d !== 0) return d;
+    return String(b.effectiveDate).localeCompare(String(a.effectiveDate));
+  });
+}
+
+function operationById(id) {
+  return state.operations.find(function (o) { return o.id === id; }) || null;
+}
+
+function byOperation(collection, id) {
+  return state[collection].filter(function (r) { return r.operationId === id; });
+}
+
+function calendarItems(list) {
+  return list.map(function (c) {
+    const op = operationById(c.operationId);
+    return Object.assign({}, c, {
+      status: refreshCalendarStatus(c.dueDate, c.status),
+      operationCode: op ? op.code : "",
+      operationName: op ? op.name : "",
+    });
+  });
+}
+
+function operationDetail(id) {
+  const operation = operationById(id);
+  if (!operation) return null;
+  const cmp = function (key, dir) {
+    return function (a, b) {
+      const r = String(a[key]).localeCompare(String(b[key]));
+      return dir === "desc" ? -r : r;
+    };
+  };
+  return {
+    operation: operation,
+    loans: byOperation("loans", id).sort(cmp("reference")),
+    cashEvents: byOperation("cashEvents", id).sort(cmp("eventDate", "desc")),
+    calendar: calendarItems(byOperation("calendar", id)).sort(cmp("dueDate")),
+    reports: byOperation("reports", id).sort(cmp("reportDate", "desc")),
+    correspondences: byOperation("correspondences", id).sort(cmp("sentAt", "desc")),
+    instructions: byOperation("instructions", id).sort(cmp("dueDate", "desc")),
+    steps: byOperation("steps", id).sort(function (a, b) { return a.stepNo - b.stepNo; }),
+  };
+}
+
+function dashboardData() {
+  const ops = operationsSorted();
+  const year = new Date().getFullYear();
+  const recoveredYtd = state.cashEvents
+    .filter(function (c) {
+      return c.kind === "collection" &&
+        (c.status === "executed" || c.status === "confirmed") &&
+        c.eventDate >= year + "-01-01";
+    })
+    .reduce(function (s, c) { return s + c.amount; }, 0);
+
+  const horizon = toIsoDate(new Date(Date.now() + 60 * 86400000));
+  const calendar = calendarItems(state.calendar)
+    .filter(function (c) { return c.status !== "done" && c.status !== "skipped" && c.dueDate <= horizon; })
+    .sort(function (a, b) { return a.dueDate.localeCompare(b.dueDate); });
+
+  const kpis = {
+    activeOperations: ops.filter(function (o) { return o.status === "active" || o.status === "structuration"; }).length,
+    totalOutstanding: ops.filter(function (o) { return o.status !== "archive"; })
+      .reduce(function (s, o) { return s + o.investorOutstanding; }, 0),
+    recoveredYtd: recoveredYtd,
+    collateralShortfalls: ops.filter(function (o) {
+      if (o.status === "archive") return false;
+      const required = o.investorOutstanding * o.collateralRatio;
+      return required > 0 && o.collateralPledged < required;
+    }).length,
+    overdueItems: calendar.filter(function (c) { return c.status === "overdue"; }).length,
+    upcomingItems: calendar.filter(function (c) { return c.status === "due_soon" || c.status === "upcoming"; }).length,
+  };
+
+  return { operations: ops, kpis: kpis, calendar: calendar };
+}
+
+function nextInstallment(detail) {
+  const next = investorAmortization(detail.operation).find(function (r) { return !r.paid; });
+  if (!next) return { principal: 0, interest: 0, amount: 0, dueDate: "" };
+  return { principal: next.principal, interest: next.interest, amount: next.amount, dueDate: next.dueDate };
+}
+
+function collectionsSince(detail, since) {
+  return detail.cashEvents
+    .filter(function (c) {
+      return c.kind === "collection" &&
+        (c.status === "executed" || c.status === "confirmed") &&
+        c.eventDate > since;
+    })
+    .reduce(function (s, c) { return s + c.amount; }, 0);
+}
+
+/* -------------------------------- Actions -------------------------------- */
+
+const actions = {
+  createOperation: function (data) {
+    if (state.operations.some(function (o) { return o.code.toLowerCase() === data.code.toLowerCase(); })) {
+      throw new Error("Une opération avec ce code existe déjà.");
+    }
+    const id = uid();
+    state.operations.push(Object.assign({
+      id: id,
+      status: "structuration",
+      dayCount: "360",
+      currency: "XOF",
+      investorOutstanding: data.investorOriginal,
+      createdAt: new Date().toISOString(),
+    }, data));
+
+    PROCEDURE_STEPS.forEach(function (step) {
+      state.steps.push({
+        id: uid(), operationId: id, stepNo: step.n,
+        status: step.n === 1 ? "in_progress" : "pending", completedAt: null,
+      });
+    });
+
+    generateCalendar({
+      effectiveDate: data.effectiveDate,
+      expiryDate: data.expiryDate,
+      acquirerSpv: data.acquirerSpv,
+      investorSpv: data.investorSpv,
+    }).forEach(function (item) {
+      state.calendar.push({
+        id: uid(), operationId: id, kind: item.kind, dueDate: item.dueDate,
+        title: item.title, status: "upcoming", completedAt: null,
+      });
+    });
+
+    save();
+    return id;
+  },
+
+  setOperationStatus: function (id, status) {
+    const op = operationById(id);
+    if (op) op.status = status;
+    commit("Statut mis à jour");
+  },
+
+  setCollateral: function (id, value) {
+    const op = operationById(id);
+    if (!op) return;
+    const delta = value - op.collateralPledged;
+    op.collateralPledged = value;
+    if (Math.abs(delta) >= 1) {
+      state.cashEvents.push({
+        id: uid(), operationId: id, loanId: null,
+        kind: delta > 0 ? "collateral_topup" : "collateral_draw",
+        amount: Math.abs(delta), eventDate: todayIso(), status: "confirmed",
+        counterparty: "", reference: "",
+        notes: delta > 0 ? "Alimentation du compte nanti" : "Prélèvement sur le compte nanti",
+      });
+    }
+    commit("Collatéral mis à jour");
+  },
+
+  addLoan: function (operationId, data) {
+    state.loans.push({
+      id: uid(), operationId: operationId,
+      reference: data.reference, debtorLabel: data.debtorLabel,
+      originalPrincipal: data.originalPrincipal, outstandingPrincipal: data.outstandingPrincipal,
+      interestRate: data.interestRate, status: data.status,
+      nextDueDate: data.nextDueDate || null, lastPaymentDate: null, lastPaymentAmount: 0,
+      recoveredTotal: 0, notes: data.notes || "",
+    });
+    commit("Ligne ajoutée");
+  },
+
+  setLoanStatus: function (id, status) {
+    const loan = state.loans.find(function (l) { return l.id === id; });
+    if (loan) loan.status = status;
+    commit("Statut de la ligne mis à jour");
+  },
+
+  recordCollection: function (operationId, loanId, amount, eventDate, notes) {
+    const loan = state.loans.find(function (l) { return l.id === loanId; });
+    if (!loan) throw new Error("Ligne introuvable.");
+    const outstanding = Math.max(0, loan.outstandingPrincipal - amount);
+    loan.recoveredTotal += amount;
+    loan.outstandingPrincipal = outstanding;
+    loan.lastPaymentDate = eventDate;
+    loan.lastPaymentAmount = amount;
+    loan.status = outstanding === 0 ? "recovered" : loan.status === "recovered" ? "watch" : loan.status;
+    state.cashEvents.push({
+      id: uid(), operationId: operationId, loanId: loanId, kind: "collection",
+      amount: amount, eventDate: eventDate, status: "confirmed",
+      counterparty: loan.debtorLabel, reference: "ENC-" + eventDate.split("-").join(""),
+      notes: notes || "",
+    });
+    commit("Encaissement enregistré");
+  },
+
+  addCashEvent: function (operationId, data) {
+    state.cashEvents.push({
+      id: uid(), operationId: operationId, loanId: null,
+      kind: data.kind, amount: data.amount, eventDate: data.eventDate, status: data.status,
+      counterparty: data.counterparty || "", reference: data.reference || "", notes: data.notes || "",
+    });
+    commit("Flux enregistré");
+  },
+
+  setCalendarStatus: function (id, status) {
+    const item = state.calendar.find(function (c) { return c.id === id; });
+    if (item) {
+      item.status = status;
+      item.completedAt = status === "done" ? new Date().toISOString() : null;
+    }
+    commit(status === "done" ? "Marqué comme fait" : "Échéance mise à jour");
+  },
+
+  setStepStatus: function (id, status) {
+    const step = state.steps.find(function (s) { return s.id === id; });
+    if (step) {
+      step.status = status;
+      step.completedAt = status === "done" ? new Date().toISOString() : null;
+    }
+    commit("Étape mise à jour");
+  },
+
+  addCorrespondence: function (operationId, data) {
+    state.correspondences.push(Object.assign({ id: uid(), operationId: operationId }, data));
+    commit("Correspondance enregistrée");
+  },
+
+  toggleAck: function (id, value) {
+    const corr = state.correspondences.find(function (c) { return c.id === id; });
+    if (corr) corr.ackReceived = value;
+    commit();
+  },
+
+  addReport: function (operationId, data) {
+    state.reports.push(Object.assign({ id: uid(), operationId: operationId, status: "submitted", comments: "" }, data));
+    commit("Rapport soumis");
+  },
+
+  setReportStatus: function (id, status, comments) {
+    const report = state.reports.find(function (r) { return r.id === id; });
+    if (report) {
+      report.status = status;
+      if (comments != null) report.comments = comments;
+    }
+    commit("Rapport validé");
+  },
+
+  createInstruction: function (operationId, data) {
+    state.instructions.push(Object.assign({
+      id: uid(), operationId: operationId, sentAt: null, status: "draft", debitNotice: false,
+    }, data));
+    commit("Brouillon créé");
+  },
+
+  setInstructionStatus: function (id, status, debitNotice) {
+    const letter = state.instructions.find(function (i) { return i.id === id; });
+    if (!letter) return;
+    if (status === "sent" && !letter.sentAt) letter.sentAt = todayIso();
+    letter.status = status;
+    if (debitNotice != null) letter.debitNotice = debitNotice;
+
+    if (status === "executed") {
+      state.cashEvents.push({
+        id: uid(), operationId: letter.operationId, loanId: null, kind: "swap_payment",
+        amount: letter.amount, eventDate: letter.dueDate, status: "executed",
+        counterparty: letter.beneficiary, reference: "ECH-" + letter.dueDate.split("-").join(""),
+        notes: "Exécution de la lettre d'instruction",
+      });
+      const op = operationById(letter.operationId);
+      if (op) op.investorOutstanding = Math.max(0, op.investorOutstanding - letter.principal);
+      commit("Virement exécuté, encours mis à jour");
+      return;
+    }
+    commit(status === "sent" ? "Lettre marquée transmise" : "Lettre mise à jour");
+  },
+};
+
+/* ------------------------------- UI de base ------------------------------ */
+
+function badge(label, variant) {
+  return '<span class="badge ' + (variant || "") + '">' + esc(label) + "</span>";
+}
+
+const opBadge = function (s) { return badge(OPERATION_STATUS_LABEL[s] || s, OP_VARIANT[s]); };
+const loanBadge = function (s) { return badge(LOAN_STATUS_LABEL[s] || s, LOAN_VARIANT[s]); };
+const cashBadge = function (s) { return badge(CASH_STATUS_LABEL[s] || s, CASH_VARIANT[s]); };
+const calBadge = function (s) {
+  const meta = CALENDAR_STATUS_META[s] || { variant: "", label: s };
+  return badge(meta.label, meta.variant);
+};
+const calKindBadge = function (k) { return badge(CALENDAR_KIND_LABEL[k] || k, "outline"); };
+const reportBadge = function (s) {
+  return badge(REPORT_STATUS_LABEL[s] || s, s === "validated" ? "success" : s === "submitted" ? "info" : "");
+};
+const instructionBadge = function (s) {
+  return badge(INSTRUCTION_STATUS_LABEL[s] || s,
+    s === "executed" ? "success" : s === "sent" ? "info" : s === "draft" ? "warning" : "");
+};
+
+function selectHtml(attrs, options, value) {
+  const opts = options.map(function (o) {
+    return '<option value="' + esc(o.value) + '"' + (o.value === value ? " selected" : "") + ">" + esc(o.label) + "</option>";
+  }).join("");
+  return "<select " + attrs + ">" + opts + "</select>";
+}
+
+function optionsFromMap(map, keys) {
+  return (keys || Object.keys(map)).map(function (k) { return { value: k, label: map[k] }; });
+}
+
+function progress(value) {
+  const v = Math.max(0, Math.min(100, value));
+  return '<div class="progress"><div style="width:' + v + '%"></div></div>';
+}
+
+function kpiCard(label, value, hint, tone) {
+  return '<div class="card card-pad">' +
+    '<p class="eyebrow">' + esc(label) + "</p>" +
+    '<p class="h1 num' + (tone ? " " + tone : "") + '" style="font-size:28px">' + esc(value) + "</p>" +
+    (hint ? '<p class="mt-1 muted">' + esc(hint) + "</p>" : "") +
+    "</div>";
+}
+
+function empty(text) {
+  return '<p class="muted">' + esc(text) + "</p>";
+}
+
+function toast(message, isError) {
+  const host = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = "toast" + (isError ? " err" : "");
+  el.textContent = message;
+  host.appendChild(el);
+  setTimeout(function () { el.remove(); }, 3600);
+}
+
+let modalSubmit = null;
+
+function openModal(title, bodyHtml, onSubmit, wide) {
+  const root = document.getElementById("modal-root");
+  root.innerHTML =
+    '<div class="modal-scrim" data-close-modal></div>' +
+    '<div class="modal' + (wide ? " wide" : "") + '" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' +
+      '<button type="button" class="modal-close no-print" data-close-modal aria-label="Fermer">&times;</button>' +
+      (title ? '<h2 class="h2">' + esc(title) + "</h2>" : "") +
+      '<div class="mt-4">' + bodyHtml + "</div>" +
+    "</div>";
+  root.classList.add("on");
+  root.setAttribute("aria-hidden", "false");
+  modalSubmit = onSubmit || null;
+  const first = root.querySelector("input, select, textarea");
+  if (first) first.focus();
+}
+
+function closeModal() {
+  const root = document.getElementById("modal-root");
+  root.classList.remove("on");
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = "";
+  modalSubmit = null;
+}
+
+function formValues(form) {
+  const out = {};
+  Array.prototype.forEach.call(form.elements, function (el) {
+    if (!el.name) return;
+    out[el.name] = el.type === "checkbox" ? el.checked : el.value;
+  });
+  return out;
+}
+
+/* --------------------------------- Vues ---------------------------------- */
+
+const NAV_ITEMS = [
+  { href: "#/", label: "Tableau de bord", icon: '<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>' },
+  { href: "#/operations", label: "Opérations", icon: '<path d="M2 4h12M2 8h12M2 12h12"/>' },
+  { href: "#/calendrier", label: "Calendrier", icon: '<rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 2v2M10.5 2v2"/>' },
+  { href: "#/manuel", label: "Manuel", icon: '<path d="M3 3h5a2 2 0 0 1 2 2v9a1.5 1.5 0 0 0-1.5-1.5H3z"/><path d="M13 3H8a2 2 0 0 0-2 2v9a1.5 1.5 0 0 1 1.5-1.5H13z"/>' },
+];
+
+function renderNav(route) {
+  const active = route.name === "dashboard" ? "#/"
+    : route.name === "calendrier" ? "#/calendrier"
+    : route.name === "manuel" ? "#/manuel"
+    : "#/operations";
+  document.getElementById("nav").innerHTML = NAV_ITEMS.map(function (item) {
+    return '<a href="' + item.href + '" data-nav class="' + (item.href === active ? "active" : "") + '">' +
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">' + item.icon + "</svg>" +
+      esc(item.label) + "</a>";
+  }).join("");
+}
+
+/* --- Tableau de bord --- */
+
+function viewDashboard() {
+  const data = dashboardData();
+  const kpis = data.kpis;
+  const alerts = data.calendar.filter(function (c) { return c.status === "overdue" || c.status === "due_soon"; });
+
+  const attention = kpis.overdueItems + kpis.collateralShortfalls;
+
+  const alertsHtml = alerts.length === 0 ? "" :
+    '<section>' +
+      '<div class="row mt-2" style="margin-bottom:12px">' +
+        '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--warning)"><path d="M8 2l6 11H2z"/><path d="M8 6.5v3M8 11.5v.01"/></svg>' +
+        '<h2 class="h2">À traiter</h2>' +
+      "</div>" +
+      '<div class="card"><ul class="divided">' +
+        alerts.slice(0, 6).map(function (item) {
+          return "<li>" +
+            '<div class="list-card" style="box-shadow:none;border-radius:0">' +
+              "<div>" +
+                '<p style="font-weight:500">' + esc(item.title) + "</p>" +
+                '<p class="muted">' + esc(item.operationCode) + " · " + formatDate(item.dueDate) + esc(delayLabel(item.dueDate)) + "</p>" +
+              "</div>" +
+              '<div class="row">' + calKindBadge(item.kind) + calBadge(item.status) +
+                '<a class="btn ghost sm" href="#/operations/' + esc(item.operationId) + '" data-nav>Ouvrir →</a>' +
+              "</div>" +
+            "</div></li>";
+        }).join("") +
+      "</ul></div>" +
+    "</section>";
+
+  return '<div class="stack gap-8 fade-in">' +
+    '<header class="between">' +
+      "<div>" +
+        '<p class="eyebrow">Bureau des opérations</p>' +
+        '<h1 class="h1">Tableau de bord</h1>' +
+        '<p class="mt-2 muted" style="max-width:34rem">Suivi des cessions NPL, mandats de recouvrement et Total Return Swaps.</p>' +
+      "</div>" +
+      '<a class="btn" href="#/operations/new" data-nav>Nouvelle opération</a>' +
+    "</header>" +
+
+    '<section class="grid g4">' +
+      kpiCard("Opérations ouvertes", String(kpis.activeOperations), "Actives et en structuration") +
+      kpiCard("Encours investisseur", moneyCompact(kpis.totalOutstanding), "Hors opérations archivées") +
+      kpiCard("Recouvré depuis janvier", moneyCompact(kpis.recoveredYtd), "Encaissements confirmés") +
+      kpiCard("Points d'attention", String(attention),
+        kpis.overdueItems + " échéance(s) en retard · " + kpis.collateralShortfalls + " collatéral",
+        attention > 0 ? "t-danger" : "") +
+    "</section>" +
+
+    alertsHtml +
+
+    "<section>" +
+      '<div class="between" style="margin-bottom:12px">' +
+        '<h2 class="h2">Portefeuille d\'opérations</h2>' +
+        '<a class="btn ghost sm" href="#/operations" data-nav>Tout voir</a>' +
+      "</div>" +
+      '<div class="stack gap-3">' + data.operations.map(operationRow).join("") + "</div>" +
+    "</section>" +
+  "</div>";
+}
+
+function operationRow(op) {
+  const required = op.investorOutstanding * op.collateralRatio;
+  const tone = coverageTone(op.collateralPledged, required);
+  const ratio = required > 0 ? op.collateralPledged / required : 1;
+  return '<a class="card card-pad" href="#/operations/' + esc(op.id) + '" data-nav>' +
+    '<div class="between">' +
+      '<div style="min-width:0">' +
+        '<div class="row"><span class="mono muted">' + esc(op.code) + "</span>" + opBadge(op.status) + "</div>" +
+        '<h3 class="h2 mt-1" style="font-size:24px">' + esc(op.name) + "</h3>" +
+        '<p class="mt-2 muted">' + esc(op.cedantBank) + " → " + esc(op.acquirerSpv) + " → " + esc(op.investorSpv) + "</p>" +
+      "</div>" +
+      '<div class="op-metrics">' +
+        '<div><p class="eyebrow">Encours</p><p class="mt-1 num" style="font-weight:500">' + moneyCompact(op.investorOutstanding) + "</p></div>" +
+        '<div><p class="eyebrow">Nominal cédé</p><p class="mt-1 num" style="font-weight:500">' + moneyCompact(op.originalNominal) + "</p></div>" +
+        '<div><p class="eyebrow">Collatéral</p><p class="mt-1 num ' + toneClass(tone) + '" style="font-weight:500">' + pct(ratio, 0) + " du seuil</p></div>" +
+      "</div>" +
+    "</div></a>";
+}
+
+/* --- Liste des opérations --- */
+
+const STATUS_FILTERS = [
+  { id: "all", label: "Toutes" },
+  { id: "active", label: "Actives" },
+  { id: "structuration", label: "Structuration" },
+  { id: "cloture", label: "Clôture" },
+  { id: "archive", label: "Archivées" },
+];
+
+const ui = { opFilter: "all", opQuery: "", tab: "vue", calRange: "soon" };
+
+function viewOperations() {
+  const q = ui.opQuery.trim().toLowerCase();
+  const all = operationsSorted();
+  const filtered = all.filter(function (op) {
+    if (ui.opFilter !== "all" && op.status !== ui.opFilter) return false;
+    if (!q) return true;
+    return [op.code, op.name, op.cedantBank, op.acquirerSpv, op.investorSpv, op.arranger]
+      .join(" ").toLowerCase().indexOf(q) !== -1;
+  });
+
+  const rows = filtered.map(function (op) {
+    const required = op.investorOutstanding * op.collateralRatio;
+    const tone = coverageTone(op.collateralPledged, required);
+    const ratio = required > 0 ? op.collateralPledged / required : 1;
+    return "<tr>" +
+      '<td class="mono">' + esc(op.code) + "</td>" +
+      "<td>" +
+        '<a href="#/operations/' + esc(op.id) + '" data-nav style="font-weight:500">' + esc(op.name) + "</a>" +
+        '<p class="muted" style="font-size:12px">' + esc(STRUCTURE_LABEL[op.structure] || "") + " · " + esc(op.cedantBank) + "</p>" +
+      "</td>" +
+      "<td>" + opBadge(op.status) + "</td>" +
+      '<td class="num" title="' + esc(money(op.investorOutstanding, op.currency)) + '">' + moneyCompact(op.investorOutstanding) + "</td>" +
+      '<td class="num ' + toneClass(tone) + '">' + pct(ratio, 0) + "</td>" +
+      '<td class="muted">' + formatDate(op.expiryDate) + "</td>" +
+    "</tr>";
+  }).join("");
+
+  const body = filtered.length === 0
+    ? empty(all.length === 0 ? "Aucune opération. Créez le premier dossier TRS." : "Aucun dossier ne correspond à ce filtre.")
+    : '<div class="table-wrap"><table><thead><tr>' +
+        "<th>Code</th><th>Opération</th><th>Statut</th><th>Encours</th><th>Collatéral</th><th>Échéance</th>" +
+      "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+
+  return '<div class="stack gap-6 fade-in">' +
+    '<header class="between">' +
+      "<div>" +
+        '<p class="eyebrow">Portefeuille</p>' +
+        '<h1 class="h1">Opérations TRS</h1>' +
+        '<p class="mt-2 muted" style="max-width:34rem">Chaque dossier suit le même playbook : cession, mandat de recouvrement, swap et collatéral.</p>' +
+      "</div>" +
+      '<a class="btn" href="#/operations/new" data-nav>Nouvelle opération</a>' +
+    "</header>" +
+    '<div class="between" style="align-items:center">' +
+      '<div class="seg">' + STATUS_FILTERS.map(function (f) {
+        return '<button type="button" data-action="op-filter" data-value="' + f.id + '" class="' + (ui.opFilter === f.id ? "on" : "") + '">' + esc(f.label) + "</button>";
+      }).join("") + "</div>" +
+      '<input id="op-search" style="max-width:280px" placeholder="Code, banque, SPV…" aria-label="Rechercher une opération" value="' + esc(ui.opQuery) + '" />' +
+    "</div>" +
+    body +
+  "</div>";
+}
+
+/* --- Calendrier global --- */
+
+function viewCalendrier() {
+  const all = calendarItems(state.calendar).sort(function (a, b) { return a.dueDate.localeCompare(b.dueDate); });
+  const open = all.filter(function (c) { return c.status !== "done" && c.status !== "skipped"; });
+  const visible = ui.calRange === "soon" ? open.filter(function (c) { return daysUntil(c.dueDate) <= 90; }) : open;
+
+  const groups = [];
+  visible.forEach(function (item) {
+    const key = item.dueDate.slice(0, 7);
+    let group = groups.find(function (g) { return g.key === key; });
+    if (!group) { group = { key: key, items: [] }; groups.push(group); }
+    group.items.push(item);
+  });
+
+  const monthLabel = function (key) {
+    const parts = key.split("-").map(Number);
+    return new Date(parts[0], parts[1] - 1, 1).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  };
+
+  const done = all.filter(function (c) { return c.status === "done"; }).slice(-8).reverse();
+
+  const body = visible.length === 0
+    ? empty("Aucune obligation ouverte sur cette période.")
+    : groups.map(function (g) {
+        return '<section class="stack gap-2">' +
+          '<h2 class="h2" style="text-transform:capitalize">' + esc(monthLabel(g.key)) + "</h2>" +
+          g.items.map(function (c) {
+            return '<div class="list-card">' +
+              "<div>" +
+                '<p style="font-weight:500">' + esc(c.title) + "</p>" +
+                '<p class="muted">' + esc(c.operationCode) + " · " + formatDate(c.dueDate) + esc(delayLabel(c.dueDate)) + "</p>" +
+              "</div>" +
+              '<div class="row">' + calKindBadge(c.kind) + calBadge(c.status) +
+                '<a class="btn ghost sm" href="#/operations/' + esc(c.operationId) + '" data-nav>Ouvrir</a>' +
+              "</div>" +
+            "</div>";
+          }).join("") +
+        "</section>";
+      }).join("");
+
+  const doneHtml = done.length === 0 ? "" :
+    "<section>" +
+      '<h2 class="h2" style="margin-bottom:12px">Récemment clôturées</h2>' +
+      '<ul class="stack gap-2">' + done.map(function (c) {
+        return '<li class="between muted" style="font-size:13px">' +
+          "<span>" + esc(c.operationCode) + " — " + esc(c.title) + "</span><span>" + formatDate(c.dueDate) + "</span></li>";
+      }).join("") + "</ul>" +
+    "</section>";
+
+  return '<div class="stack gap-6 fade-in">' +
+    '<header class="between">' +
+      "<div>" +
+        '<p class="eyebrow">Obligations</p>' +
+        '<h1 class="h1">Calendrier</h1>' +
+        '<p class="mt-2 muted" style="max-width:34rem">Échéances semestrielles, fenêtres d\'instruction, reporting trimestriel et surveillance mensuelle, sur toutes les opérations.</p>' +
+      "</div>" +
+      '<div class="seg">' +
+        '<button type="button" data-action="cal-range" data-value="soon" class="' + (ui.calRange === "soon" ? "on" : "") + '">90 prochains jours</button>' +
+        '<button type="button" data-action="cal-range" data-value="all" class="' + (ui.calRange === "all" ? "on" : "") + '">Tout le cycle</button>' +
+      "</div>" +
+    "</header>" +
+    body + doneHtml +
+  "</div>";
+}
+
+/* --- Manuel --- */
+
+const MANUAL_ACTORS = [
+  { role: "Arrangeur", name: "Eden & MBG Capital", body: "Plateforme panafricaine de banques d'investissement. Structure l'opération, met en place les SPV et le mécanisme de swap." },
+  { role: "Banque cédante", name: "Ex. BSIC SA", body: "Vend le portefeuille NPL, conserve le mandat de recouvrement et alimente le compte nanti." },
+  { role: "SPV acquéreur", name: "Ex. LIGDI SAS", body: "Rachète le portefeuille. Instruit les virements semestriels et valide les rapports de gestion." },
+  { role: "SPV investisseur", name: "Ex. KARANGË SAS", body: "Porte le financement. Reçoit les flux de swap (capital + intérêts) les 30 avril et 31 octobre." },
+];
+
+const MANUAL_RULES = [
+  { t: "Échéances semestrielles", d: "Virement le 30 avril et le 31 octobre. Lettre d'instruction 10 à 15 jours ouvrés avant, avec accusé de réception. Rapprochement relevé / tableau d'amortissement." },
+  { t: "Reporting", d: "Rapport le dernier jour ouvré de mars, juin, octobre et décembre. L'acquéreur notifie la banque cédante 5 jours ouvrés avant. Surveillance mensuelle du portefeuille." },
+  { t: "Collatéral", d: "Compte nanti maintenu à 115 % de l'encours du prêt investisseur. En cas d'impayé, prélèvement irrévocable pour couvrir l'échéance." },
+  { t: "Lettre d'instruction", d: "Montant (capital + intérêts, base 360 jours), bénéficiaire SPV investisseur, banque du bénéficiaire, date d'exécution. Liasse : lettre, avis de débit, relevé." },
+];
+
+const MANUAL_DEFINITIONS = [
+  { t: "Jour ouvré", d: "Jour (hors samedi, dimanche et jour férié) où les banques sont ouvertes au Sénégal." },
+  { t: "NPL", d: "Non-Performing Loan — prêt en défaut ou proche du défaut de paiement." },
+  { t: "Défaut de paiement", d: "Tout montant en principal ou intérêts non payé à l'échéance par un débiteur." },
+  { t: "Date d'expiration", d: "Cinq ans après l'entrée en vigueur, sauf accord écrit ou résiliation avec préavis d'un an." },
+];
+
+function viewManuel() {
+  return '<div class="stack gap-8 fade-in">' +
+    "<header>" +
+      '<p class="eyebrow">Référentiel</p>' +
+      '<h1 class="h1">Manuel de procédures</h1>' +
+      '<p class="mt-2 muted" style="max-width:44rem">Playbook commun à toutes les opérations TRS : cession de créances NPL, mandat de recouvrement, swap de rendements et cash collatéral.</p>' +
+    "</header>" +
+
+    '<section class="stack gap-4"><h2 class="h2">Acteurs</h2><div class="grid g2">' +
+      MANUAL_ACTORS.map(function (a) {
+        return '<div class="card card-pad"><p class="eyebrow">' + esc(a.role) + "</p>" +
+          '<p class="card-title mt-1">' + esc(a.name) + "</p>" +
+          '<p class="mt-2 muted">' + esc(a.body) + "</p></div>";
+      }).join("") +
+    "</div></section>" +
+
+    '<section class="stack gap-4"><h2 class="h2">Cinq piliers</h2><div class="grid g2">' +
+      PILLARS.map(function (p, i) {
+        return '<div class="card card-pad"><p class="mono muted">' + String(i + 1).padStart(2, "0") + "</p>" +
+          '<p class="card-title mt-1">' + esc(p.title) + "</p>" +
+          '<p class="mt-2 muted">' + esc(p.body) + "</p></div>";
+      }).join("") +
+    "</div></section>" +
+
+    '<section class="stack gap-4"><h2 class="h2">Cycle opérationnel</h2><ol class="stack gap-2">' +
+      PROCEDURE_STEPS.map(function (s) {
+        return '<li class="card card-pad" style="display:grid;grid-template-columns:2.5rem 1fr;gap:12px;padding:12px 16px">' +
+          '<span class="mono muted">' + String(s.n).padStart(2, "0") + "</span>" +
+          '<div><p style="font-weight:500">' + esc(s.title) + '</p><p class="muted">' + esc(s.actor) + "</p></div></li>";
+      }).join("") +
+    "</ol></section>" +
+
+    '<section class="stack gap-4"><h2 class="h2">Règles de calendrier</h2><div class="grid g2">' +
+      MANUAL_RULES.map(function (r) {
+        return '<div class="card card-pad"><p class="card-title">' + esc(r.t) + '</p><p class="mt-2 muted">' + esc(r.d) + "</p></div>";
+      }).join("") +
+    "</div></section>" +
+
+    '<section class="stack gap-4"><h2 class="h2">Définitions</h2><div class="grid g2">' +
+      MANUAL_DEFINITIONS.map(function (d) {
+        return '<div class="card card-pad" style="padding:12px 16px"><p style="font-weight:500">' + esc(d.t) + '</p><p class="mt-1 muted">' + esc(d.d) + "</p></div>";
+      }).join("") +
+    "</div></section>" +
+  "</div>";
+}
+
+/* --- Nouvelle opération --- */
+
+function viewNewOperation() {
+  const field = function (label, input) {
+    return '<label class="field"><span>' + esc(label) + "</span>" + input + "</label>";
+  };
+  const input = function (name, attrs) {
+    return '<input name="' + name + '" ' + (attrs || "") + " />";
+  };
+
+  return '<div class="stack gap-6 fade-in" style="max-width:820px;margin:0 auto">' +
+    "<header>" +
+      '<p class="eyebrow">Nouveau dossier</p>' +
+      '<h1 class="h1">Ouvrir une opération TRS</h1>' +
+      '<p class="mt-2 muted">Le playbook du manuel (convention, recouvrement, échéances, rapports) est appliqué automatiquement à chaque nouveau dossier.</p>' +
+    "</header>" +
+    '<form id="new-operation" class="card card-pad stack gap-8" style="padding:24px">' +
+      '<section class="stack gap-4">' +
+        '<h2 class="h3">Identité</h2>' +
+        '<div class="grid g2">' +
+          field("Code", input("code", 'required placeholder="TRS-XXXX-2026"')) +
+          field("Structure", selectHtml('name="structure"', optionsFromMap(STRUCTURE_LABEL), "trs_npl")) +
+          '<div style="grid-column:1/-1">' + field("Intitulé", input("name", 'required placeholder="Cession NPL — …"')) + "</div>" +
+        "</div>" +
+      "</section>" +
+      '<section class="stack gap-4">' +
+        '<h2 class="h3">Acteurs</h2>' +
+        '<div class="grid g2">' +
+          field("Arrangeur", input("arranger", 'required value="Eden &amp; MBG Capital"')) +
+          field("Banque cédante", input("cedantBank", "required")) +
+          field("SPV acquéreur", input("acquirerSpv", "required")) +
+          field("SPV investisseur", input("investorSpv", "required")) +
+          field("Cabinet juridique", input("legalCounsel")) +
+          field("Banque prêteur", input("lenderBank", 'placeholder="Par défaut : banque cédante"')) +
+        "</div>" +
+      "</section>" +
+      '<section class="stack gap-4">' +
+        '<h2 class="h3">Termes financiers</h2>' +
+        '<div class="grid g2">' +
+          field("Date d'entrée en vigueur", input("effectiveDate", 'required type="date"')) +
+          field("Date d'expiration", input("expiryDate", 'required type="date"')) +
+          field("Nominal du portefeuille (F CFA)", input("originalNominal", 'required inputmode="numeric"')) +
+          field("Prix d'acquisition (F CFA)", input("acquisitionPrice", 'required inputmode="numeric"')) +
+          field("Décote (%)", input("discountPct", 'value="40"')) +
+          field("Prêt investisseur (F CFA)", input("investorOriginal", 'required inputmode="numeric"')) +
+          field("Taux swap (%)", input("swapRate", 'value="8.5"')) +
+          field("Ratio collatéral (%)", input("collateralRatio", 'value="115"')) +
+          field("Cash collatéral nanti (F CFA)", input("collateralPledged", 'required inputmode="numeric"')) +
+        "</div>" +
+        '<p class="muted" id="collateral-hint"></p>' +
+      "</section>" +
+      '<section class="stack gap-2">' +
+        '<label class="field"><span>Notes de structuration</span><textarea name="notes" rows="4"></textarea></label>' +
+      "</section>" +
+      '<div class="row" style="justify-content:flex-end">' +
+        '<a class="btn ghost" href="#/operations" data-nav>Annuler</a>' +
+        '<button type="submit" class="btn">Créer l\'opération</button>' +
+      "</div>" +
+    "</form>" +
+  "</div>";
+}
+
+function wireNewOperationForm() {
+  const form = document.getElementById("new-operation");
+  if (!form) return;
+  const el = function (name) { return form.elements[name]; };
+
+  const syncHint = function () {
+    const investor = parseNum(el("investorOriginal").value);
+    const ratio = parseNum(el("collateralRatio").value) / 100;
+    const required = investor * ratio;
+    document.getElementById("collateral-hint").textContent = required > 0
+      ? "Seuil collatéral : " + moneyCompact(required) + " (" + pctPoints(parseNum(el("collateralRatio").value), 0) +
+        " de l'encours). Durée par défaut : cinq ans, sauf accord contraire."
+      : "";
+  };
+
+  form.addEventListener("input", function (event) {
+    const name = event.target.name;
+    if (name === "effectiveDate" && el("effectiveDate").value && !el("expiryDate").value) {
+      const d = parseIsoDate(el("effectiveDate").value);
+      d.setFullYear(d.getFullYear() + 5);
+      el("expiryDate").value = toIsoDate(d);
+    }
+    if (name === "originalNominal" || name === "acquisitionPrice") {
+      const nom = parseNum(el("originalNominal").value);
+      const price = parseNum(el("acquisitionPrice").value);
+      if (nom > 0 && price >= 0) el("discountPct").value = ((1 - price / nom) * 100).toFixed(2);
+    }
+    if (name === "investorOriginal" && el("investorOriginal").value && !el("collateralPledged").value) {
+      const inv = parseNum(el("investorOriginal").value);
+      const ratio = parseNum(el("collateralRatio").value) / 100;
+      if (inv > 0) el("collateralPledged").value = String(Math.round(inv * ratio));
+    }
+    syncHint();
+  });
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const v = formValues(form);
+    try {
+      const id = actions.createOperation({
+        code: v.code.trim(),
+        name: v.name.trim(),
+        structure: v.structure,
+        arranger: v.arranger.trim(),
+        cedantBank: v.cedantBank.trim(),
+        acquirerSpv: v.acquirerSpv.trim(),
+        investorSpv: v.investorSpv.trim(),
+        legalCounsel: v.legalCounsel.trim(),
+        lenderBank: v.lenderBank.trim() || v.cedantBank.trim(),
+        effectiveDate: v.effectiveDate,
+        expiryDate: v.expiryDate,
+        originalNominal: parseNum(v.originalNominal),
+        acquisitionPrice: parseNum(v.acquisitionPrice),
+        discountPct: parseNum(v.discountPct),
+        collateralRatio: parseNum(v.collateralRatio) / 100,
+        swapRate: parseNum(v.swapRate) / 100,
+        investorOriginal: parseNum(v.investorOriginal),
+        collateralPledged: parseNum(v.collateralPledged),
+        notes: v.notes.trim(),
+      });
+      toast("Opération créée. Le calendrier et les 12 étapes ont été générés.");
+      ui.tab = "vue";
+      location.hash = "#/operations/" + id;
+    } catch (err) {
+      toast(err.message || "Création impossible.", true);
+    }
+  });
+}
+
+/* --- Fiche opération --- */
+
+const DESK_TABS = [
+  { id: "vue", label: "Vue d'ensemble" },
+  { id: "portefeuille", label: "Portefeuille" },
+  { id: "flux", label: "Flux" },
+  { id: "echeances", label: "Échéances" },
+  { id: "instructions", label: "Lettres" },
+  { id: "rapports", label: "Rapports" },
+  { id: "registre", label: "Registre" },
+  { id: "procedure", label: "Procédure" },
+];
+
+const PIE_COLORS = ["#15304f", "#1e4568", "#2a4a68", "#5c6773", "#0b1c2c", "#2c5a4a", "#8b6914"];
+
+function viewOperation(id) {
+  const detail = operationDetail(id);
+  if (!detail) {
+    return '<div class="stack gap-4"><h1 class="h1">Opération introuvable</h1>' +
+      empty("Ce dossier n'existe pas (ou plus) dans les données locales.") +
+      '<div><a class="btn" href="#/operations" data-nav>Retour aux opérations</a></div></div>';
+  }
+
+  const op = detail.operation;
+  const required = op.investorOutstanding * op.collateralRatio;
+  const tone = coverageTone(op.collateralPledged, required);
+  const ratio = required > 0 ? op.collateralPledged / required : 1;
+  const recovered = detail.loans.reduce(function (s, l) { return s + l.recoveredTotal; }, 0);
+  const outstandingLoans = detail.loans.reduce(function (s, l) { return s + l.outstandingPrincipal; }, 0);
+  const doneSteps = detail.steps.filter(function (s) { return s.status === "done"; }).length;
+
+  const tabsHtml = '<div class="tabs no-print">' + DESK_TABS.map(function (t) {
+    return '<button type="button" data-action="tab" data-value="' + t.id + '" class="' + (ui.tab === t.id ? "on" : "") + '">' + esc(t.label) + "</button>";
+  }).join("") + "</div>" +
+  '<div class="tabs-mobile no-print">' +
+    selectHtml('data-action="tab-select" aria-label="Section"',
+      DESK_TABS.map(function (t) { return { value: t.id, label: t.label }; }), ui.tab) +
+  "</div>";
+
+  const panel =
+    ui.tab === "portefeuille" ? tabPortfolio(detail) :
+    ui.tab === "flux" ? tabCash(detail) :
+    ui.tab === "echeances" ? tabSchedule(detail) :
+    ui.tab === "instructions" ? tabLetters(detail) :
+    ui.tab === "rapports" ? tabReports(detail) :
+    ui.tab === "registre" ? tabRegister(detail) :
+    ui.tab === "procedure" ? tabProcedure(detail) :
+    tabOverview(detail);
+
+  return '<div class="stack gap-6 fade-in">' +
+    '<header class="between">' +
+      "<div>" +
+        '<div class="row"><span class="mono muted">' + esc(op.code) + "</span>" + opBadge(op.status) +
+          '<span class="muted" style="font-size:12px">' + esc(STRUCTURE_LABEL[op.structure] || "") + "</span></div>" +
+        '<h1 class="h1">' + esc(op.name) + "</h1>" +
+        '<p class="mt-2 muted">' + esc(op.cedantBank) + " · " + esc(op.acquirerSpv) + " · " + esc(op.investorSpv) + "</p>" +
+      "</div>" +
+      '<div class="row no-print" style="min-width:200px">' +
+        selectHtml('data-action="op-status" aria-label="Statut de l\'opération"', optionsFromMap(OPERATION_STATUS_LABEL), op.status) +
+      "</div>" +
+    "</header>" +
+
+    '<section class="grid g4">' +
+      '<div class="card card-pad"><p class="eyebrow">Encours investisseur</p>' +
+        '<p class="h2 num mt-2">' + moneyCompact(op.investorOutstanding) + "</p>" +
+        '<p class="mt-1 muted">sur ' + moneyCompact(op.investorOriginal) + "</p></div>" +
+      '<div class="card card-pad"><p class="eyebrow">Portefeuille restant</p>' +
+        '<p class="h2 num mt-2">' + moneyCompact(outstandingLoans) + "</p>" +
+        '<p class="mt-1 muted">recouvré ' + moneyCompact(recovered) + "</p></div>" +
+      '<div class="card card-pad"><p class="eyebrow">Collatéral</p>' +
+        '<p class="h2 num mt-2 ' + toneClass(tone) + '">' + pct(ratio, 1) + "</p>" +
+        '<div class="mt-3">' + progress(ratio * 100) + "</div>" +
+        '<p class="mt-2 muted">Seuil ' + pctPoints(op.collateralRatio * 100, 0) + " · " + moneyCompact(required) + " requis</p></div>" +
+      '<div class="card card-pad"><p class="eyebrow">Procédure</p>' +
+        '<p class="h2 num mt-2">' + doneSteps + "/12</p>" +
+        '<div class="mt-3">' + progress((doneSteps / 12) * 100) + "</div>" +
+        '<p class="mt-2 muted">Étapes du mandat</p></div>' +
+    "</section>" +
+
+    tabsHtml +
+    '<div class="stack gap-6">' + panel + "</div>" +
+  "</div>";
+}
+
+function structureDiagram(op) {
+  const node = function (role, name, hint) {
+    return '<div class="node"><p class="eyebrow">' + esc(role) + "</p>" +
+      '<p class="mt-1" style="font-weight:500">' + esc(name) + "</p>" +
+      '<p class="mt-1 muted">' + esc(hint) + "</p></div>";
+  };
+  const arrow = '<div class="arrow"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>';
+  const tile = function (n, title, body) {
+    return '<li class="tile"><span class="mono muted">' + n + "</span>" +
+      '<p class="mt-1" style="font-weight:500">' + esc(title) + "</p>" +
+      '<p class="muted">' + body + "</p></li>";
+  };
+
+  return '<div class="stack gap-4">' +
+    '<p class="eyebrow">Arrangeur · ' + esc(op.arranger) + "</p>" +
+    '<div class="flow">' +
+      node("Banque cédante", op.cedantBank, "Recouvreur mandaté") + arrow +
+      node("SPV acquéreur", op.acquirerSpv, "Porte le portefeuille") + arrow +
+      node("SPV investisseur", op.investorSpv, "Porte le financement") +
+    "</div>" +
+    '<ol class="grid g2">' +
+      tile("01", "Cession NPL", moneyCompact(op.originalNominal) + " cédés à " + moneyCompact(op.acquisitionPrice) + " (décote " + pctPoints(op.discountPct, 0) + ")") +
+      tile("02", "Mandat de recouvrement", esc(op.cedantBank) + " encaisse au nom de " + esc(op.acquirerSpv)) +
+      tile("03", "Swap de rendements", "Flux semestriels (30 avr. / 31 oct.) à " + pctPoints(op.swapRate * 100) + " — base " + esc(op.dayCount) + " j") +
+      tile("04", "Cash collatéral", "Compte nanti à " + pctPoints(op.collateralRatio * 100, 0) + " de l'encours investisseur") +
+    "</ol>" +
+  "</div>";
+}
+
+function tabOverview(detail) {
+  const op = detail.operation;
+  const next = nextInstallment(detail);
+  const schedule = investorAmortization(op);
+  const lastPaid = schedule.slice().reverse().find(function (r) { return r.paid; });
+  const since = lastPaid ? lastPaid.dueDate : op.effectiveDate;
+  const collected = collectionsSince(detail, since);
+  const gap = next.amount > 0 ? next.amount - collected : 0;
+  const required = op.investorOutstanding * op.collateralRatio;
+  const upcoming = detail.calendar.filter(function (c) { return c.status !== "done" && c.status !== "skipped"; }).slice(0, 5);
+
+  const nextCard = next.dueDate
+    ? '<p class="muted">' + formatDateLong(next.dueDate) + "</p>" +
+      '<p class="h2 num mt-1">' + money(next.amount, op.currency) + "</p>" +
+      '<p class="mt-1 muted">Capital ' + moneyCompact(next.principal) + " + intérêts " + moneyCompact(next.interest) +
+        " (base " + esc(op.dayCount) + " j, " + pctPoints(op.swapRate * 100) + ")</p>" +
+      '<div class="mt-3" style="border-top:1px solid var(--border);padding-top:12px">' +
+        '<p class="muted">Rapprochement depuis ' + formatDate(since) + "</p>" +
+        "<p>Encaissements " + moneyCompact(collected) +
+          (gap > 0 ? '<span class="t-warning"> · écart ' + moneyCompact(gap) + "</span>" : '<span class="t-success"> · couvert</span>') +
+        "</p>" +
+      "</div>"
+    : empty("Aucune échéance restante.");
+
+  return '<div class="split">' +
+    '<div class="stack gap-6">' +
+      '<div class="card"><div class="card-head"><p class="card-title">Mécanisme</p></div>' +
+        '<div class="card-pad">' + structureDiagram(op) + "</div></div>" +
+      (op.notes
+        ? '<div class="card"><div class="card-head"><p class="card-title">Notes</p></div>' +
+          '<div class="card-pad"><p>' + esc(op.notes) + "</p></div></div>"
+        : "") +
+    "</div>" +
+    '<div class="stack gap-6">' +
+      '<div class="card"><div class="card-head"><p class="card-title">Prochaine échéance</p></div>' +
+        '<div class="card-pad">' + nextCard + "</div></div>" +
+      '<div class="card no-print"><div class="card-head"><p class="card-title">Ajuster le collatéral</p></div>' +
+        '<div class="card-pad stack gap-3">' +
+          '<input id="collateral-input" inputmode="numeric" value="' + esc(op.collateralPledged) + '" aria-label="Cash collatéral nanti" />' +
+          '<div class="row">' +
+            '<button type="button" class="btn sm" data-action="collateral-save">Enregistrer</button>' +
+            (op.collateralPledged < required - 1
+              ? '<button type="button" class="btn outline sm" data-action="collateral-fill" data-value="' + Math.round(required) + '">Compléter au seuil</button>'
+              : "") +
+          "</div>" +
+        "</div></div>" +
+      '<div class="card"><div class="card-head"><p class="card-title">Calendrier proche</p></div>' +
+        '<div class="card-pad stack gap-3">' +
+          (upcoming.length === 0 ? empty("Rien à venir.") : upcoming.map(function (c) {
+            return '<div class="between" style="gap:8px">' +
+              '<div><p style="font-weight:500">' + esc(c.title) + '</p><p class="muted" style="font-size:12px">' + formatDate(c.dueDate) + "</p></div>" +
+              calBadge(c.status) + "</div>";
+          }).join("")) +
+        "</div></div>" +
+    "</div>" +
+  "</div>";
+}
+
+function donut(slices) {
+  const total = slices.reduce(function (s, d) { return s + d.value; }, 0);
+  if (total === 0) return "";
+  const r = 42, c = 2 * Math.PI * r;
+  let offset = 0;
+  const arcs = slices.map(function (d, i) {
+    const len = (d.value / total) * c;
+    const el = '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="' + PIE_COLORS[i % PIE_COLORS.length] +
+      '" stroke-width="16" stroke-dasharray="' + (len - 2) + " " + (c - len + 2) +
+      '" stroke-dashoffset="' + (-offset) + '" transform="rotate(-90 60 60)"><title>' + esc(d.name) + " : " + d.value + "</title></circle>";
+    offset += len;
+    return el;
+  }).join("");
+  return '<svg viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Composition du portefeuille">' + arcs + "</svg>";
+}
+
+function tabPortfolio(detail) {
+  const slices = LOAN_STATUSES.map(function (status) {
+    return { name: LOAN_STATUS_LABEL[status], value: detail.loans.filter(function (l) { return l.status === status; }).length };
+  }).filter(function (d) { return d.value > 0; });
+
+  const legend = slices.map(function (s, i) {
+    return '<li class="between" style="gap:8px;font-size:12px">' +
+      '<span class="row" style="gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:' + PIE_COLORS[i % PIE_COLORS.length] + '"></span>' + esc(s.name) + "</span>" +
+      '<span class="num muted">' + s.value + "</span></li>";
+  }).join("");
+
+  const rows = detail.loans.map(function (l) {
+    return "<tr>" +
+      '<td><p style="font-weight:500">' + esc(l.debtorLabel) + '</p><p class="mono muted">' + esc(l.reference) + "</p></td>" +
+      '<td class="no-print">' + selectHtml('data-action="loan-status" data-id="' + esc(l.id) + '" style="width:170px" aria-label="Statut de la ligne"',
+        optionsFromMap(LOAN_STATUS_LABEL, LOAN_STATUSES), l.status) + "</td>" +
+      '<td class="num">' + moneyCompact(l.outstandingPrincipal) + "</td>" +
+      '<td class="num">' + moneyCompact(l.recoveredTotal) + "</td>" +
+      '<td class="right no-print"><button type="button" class="btn outline sm" data-action="collection" data-id="' + esc(l.id) + '">Encaisser</button></td>' +
+    "</tr>";
+  }).join("");
+
+  return '<div class="split-side">' +
+    '<div class="card"><div class="card-head"><p class="card-title">Composition</p></div>' +
+      '<div class="card-pad">' +
+        (slices.length === 0 ? empty("Aucune ligne.") :
+          '<div style="display:flex;justify-content:center">' + donut(slices) + '</div><ul class="mt-3 stack gap-1">' + legend + "</ul>") +
+      "</div></div>" +
+    '<div class="stack gap-3">' +
+      '<div class="row no-print" style="justify-content:flex-end"><button type="button" class="btn sm" data-action="loan-add">Ajouter une ligne</button></div>' +
+      (detail.loans.length === 0 ? empty("Aucune créance enregistrée sur ce dossier.") :
+        '<div class="table-wrap"><table><thead><tr><th>Ligne</th><th class="no-print">Statut</th><th>Encours</th><th>Recouvré</th><th></th></tr></thead>' +
+        "<tbody>" + rows + "</tbody></table></div>") +
+    "</div>" +
+  "</div>";
+}
+
+function tabCash(detail) {
+  const op = detail.operation;
+  const rows = detail.cashEvents.map(function (c) {
+    return "<tr>" +
+      "<td>" + formatDate(c.eventDate) + "</td>" +
+      "<td>" + esc(CASH_KIND_LABEL[c.kind] || c.kind) + "</td>" +
+      '<td class="num">' + money(c.amount, op.currency) + "</td>" +
+      '<td class="muted">' + esc(c.counterparty || "—") + "</td>" +
+      "<td>" + cashBadge(c.status) + "</td>" +
+    "</tr>";
+  }).join("");
+
+  const collections = detail.cashEvents.filter(function (c) { return c.kind === "collection"; })
+    .slice().sort(function (a, b) { return a.eventDate.localeCompare(b.eventDate); });
+  let run = 0;
+  const journalRows = collections.map(function (c) {
+    if (c.status === "confirmed" || c.status === "executed") run += c.amount;
+    return "<tr><td>" + formatDate(c.eventDate) + "</td>" +
+      '<td class="muted">' + esc(c.counterparty || c.reference || "—") + "</td>" +
+      '<td class="num">' + moneyCompact(c.amount) + "</td>" +
+      '<td class="num">' + moneyCompact(run) + "</td></tr>";
+  }).join("");
+
+  return '<div class="stack gap-6">' +
+    '<div class="card no-print"><div class="card-head"><p class="card-title">Saisir un flux</p></div>' +
+      '<div class="card-pad">' +
+        '<form id="cash-form" class="form-grid">' +
+          selectHtml('name="kind" aria-label="Type de flux"', optionsFromMap(CASH_KIND_LABEL), "reversion") +
+          '<input name="amount" placeholder="Montant" inputmode="numeric" required />' +
+          '<input name="eventDate" type="date" value="' + todayIso() + '" required />' +
+          '<button type="submit" class="btn">Ajouter</button>' +
+          '<input name="counterparty" placeholder="Contrepartie" style="grid-column:1/-1" />' +
+        "</form>" +
+      "</div></div>" +
+    (detail.cashEvents.length === 0 ? empty("Aucun flux enregistré.") :
+      '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Contrepartie</th><th>Statut</th></tr></thead>' +
+      "<tbody>" + rows + "</tbody></table></div>") +
+    (collections.length === 0 ? "" :
+      '<section class="stack gap-3"><h3 class="h3">Journal de recouvrement</h3>' +
+        '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Ligne</th><th>Montant</th><th>Cumul</th></tr></thead>' +
+        "<tbody>" + journalRows + "</tbody></table></div></section>") +
+  "</div>";
+}
+
+function tabSchedule(detail) {
+  const op = detail.operation;
+  const schedule = investorAmortization(op);
+
+  const rows = schedule.map(function (r) {
+    return "<tr><td>" + formatDate(r.dueDate) + "</td>" +
+      '<td class="num">' + moneyCompact(r.principal) + "</td>" +
+      '<td class="num">' + moneyCompact(r.interest) + "</td>" +
+      '<td class="num">' + moneyCompact(r.amount) + "</td>" +
+      '<td class="num">' + moneyCompact(r.remainingAfter) + "</td>" +
+      '<td class="' + (r.paid ? "t-success" : "muted") + '">' + (r.paid ? "Payée" : "À venir") + "</td></tr>";
+  }).join("");
+
+  const items = detail.calendar.map(function (c) {
+    return '<li class="list-card">' +
+      '<div><p style="font-weight:500">' + esc(c.title) + '</p><p class="muted">' + formatDate(c.dueDate) + "</p></div>" +
+      '<div class="row">' + calKindBadge(c.kind) + calBadge(c.status) +
+        (c.status !== "done"
+          ? '<button type="button" class="btn outline sm no-print" data-action="cal-done" data-id="' + esc(c.id) + '">✓ Fait</button>'
+          : "") +
+      "</div></li>";
+  }).join("");
+
+  return '<div class="stack gap-8">' +
+    '<section class="stack gap-3">' +
+      '<h3 class="h3">Tableau d\'amortissement</h3>' +
+      '<p class="muted">Rapprochement avec le relevé : capital linéaire, intérêts sur encours restant, base ' + esc(op.dayCount) + " jours.</p>" +
+      (schedule.length === 0 ? empty("Aucune échéance sur la période contractuelle.") :
+        '<div class="table-wrap"><table><thead><tr><th>Échéance</th><th>Capital</th><th>Intérêts</th><th>Total</th><th>Restant</th><th>Statut</th></tr></thead>' +
+        "<tbody>" + rows + "</tbody></table></div>") +
+    "</section>" +
+    '<section class="stack gap-3"><h3 class="h3">Calendrier opérationnel</h3>' +
+      (detail.calendar.length === 0 ? empty("Aucune obligation planifiée.") : '<ul class="stack gap-2">' + items + "</ul>") +
+    "</section>" +
+  "</div>";
+}
+
+function tabLetters(detail) {
+  const op = detail.operation;
+  const next = nextInstallment(detail);
+
+  const list = detail.instructions.map(function (ins) {
+    return '<li class="card card-pad">' +
+      '<div class="between">' +
+        '<div><p style="font-weight:500">Échéance ' + formatDate(ins.dueDate) + "</p>" +
+        '<p class="muted num">' + money(ins.amount, op.currency) + " · " + esc(ins.beneficiary) + "</p></div>" +
+        instructionBadge(ins.status) +
+      "</div>" +
+      '<div class="row mt-4 no-print">' +
+        '<button type="button" class="btn outline sm" data-action="letter-preview" data-id="' + esc(ins.id) + '">Aperçu</button>' +
+        (ins.status === "draft" ? '<button type="button" class="btn sm" data-action="letter-sent" data-id="' + esc(ins.id) + '">Marquer transmise</button>' : "") +
+        (ins.status === "sent" ? '<button type="button" class="btn sm" data-action="letter-executed" data-id="' + esc(ins.id) + '">Confirmer l\'exécution</button>' : "") +
+      "</div></li>";
+  }).join("");
+
+  return '<div class="stack gap-6">' +
+    '<div class="card no-print"><div class="card-head"><p class="card-title">Préparer la prochaine lettre</p></div>' +
+      '<div class="card-pad stack gap-3">' +
+        (next.dueDate
+          ? '<p class="muted">Échéance du ' + formatDateLong(next.dueDate) + " — " + money(next.amount, op.currency) + "</p>" +
+            '<div><button type="button" class="btn" data-action="letter-create">Générer le brouillon</button></div>'
+          : empty("Pas d'échéance à instruire.")) +
+      "</div></div>" +
+    (detail.instructions.length === 0 ? empty("Aucune lettre d'instruction.") : '<ul class="stack gap-3">' + list + "</ul>") +
+  "</div>";
+}
+
+function letterHtml(op, instruction) {
+  const lines = String(instruction.body).split("\n").map(function (line) {
+    return line.trim() === "" ? '<div style="height:10px"></div>' : "<p>" + esc(line) + "</p>";
+  }).join("");
+  return '<article class="letter">' +
+    '<p class="eyebrow">' + esc(op.acquirerSpv) + "</p>" +
+    '<h2 class="h2 mt-4">Lettre d\'instruction</h2>' +
+    '<p class="mt-1 muted">' + esc(op.code) + "</p>" +
+    '<div class="mt-6">' + lines + "</div>" +
+  "</article>" +
+  '<div class="row no-print mt-4" style="justify-content:flex-end">' +
+    '<button type="button" class="btn" data-action="print">Imprimer</button></div>';
+}
+
+function tabReports(detail) {
+  const list = detail.reports.map(function (r) {
+    return '<div class="card card-pad">' +
+      '<div class="between"><p class="card-title">' + esc(r.period) + " · " + formatDate(r.reportDate) + "</p>" + reportBadge(r.status) + "</div>" +
+      '<div class="stack gap-3 mt-3">' +
+        '<p><span class="muted">Risque — </span>' + esc(r.riskSummary) + "</p>" +
+        '<p><span class="muted">Remboursements — </span>' + esc(r.repaymentStatus) + "</p>" +
+        '<p><span class="muted">Vs prévisions — </span>' + esc(r.vsForecast) + "</p>" +
+        (r.comments ? '<p class="muted">' + esc(r.comments) + "</p>" : "") +
+        (r.status === "submitted"
+          ? '<div class="no-print"><button type="button" class="btn sm" data-action="report-validate" data-id="' + esc(r.id) + '">Valider et archiver</button></div>'
+          : "") +
+      "</div></div>";
+  }).join("");
+
+  return '<div class="stack gap-6">' +
+    '<div class="row no-print" style="justify-content:flex-end"><button type="button" class="btn sm" data-action="report-add">Nouveau rapport</button></div>' +
+    (detail.reports.length === 0 ? empty("Aucun rapport pour l'instant.") : '<div class="stack gap-4">' + list + "</div>") +
+  "</div>";
+}
+
+function tabRegister(detail) {
+  const list = detail.correspondences.map(function (c) {
+    return '<li class="list-card">' +
+      '<div><p style="font-weight:500">' + esc(c.subject) + "</p>" +
+        '<p class="muted">' + formatDate(c.sentAt) + " · " + (c.channel === "email" ? "Courriel" : "Recommandé") +
+        " · " + (c.direction === "outbound" ? "Sortant" : "Entrant") + "</p></div>" +
+      '<label class="check"><input type="checkbox" data-action="corr-ack" data-id="' + esc(c.id) + '"' + (c.ackReceived ? " checked" : "") + " /> AR</label>" +
+    "</li>";
+  }).join("");
+
+  return '<div class="stack gap-6">' +
+    '<p class="muted">Toute communication officielle se fait par courriel ou courrier recommandé, avec accusé de réception.</p>' +
+    '<div class="row no-print" style="justify-content:flex-end"><button type="button" class="btn sm" data-action="corr-add">Nouvelle correspondance</button></div>' +
+    (detail.correspondences.length === 0 ? empty("Registre vide.") : '<ul class="stack gap-2">' + list + "</ul>") +
+  "</div>";
+}
+
+function tabProcedure(detail) {
+  const pillars = PILLARS.map(function (p) {
+    return '<div class="card card-pad"><p class="card-title">' + esc(p.title) + '</p><p class="mt-2 muted">' + esc(p.body) + "</p></div>";
+  }).join("");
+
+  const steps = PROCEDURE_STEPS.map(function (step) {
+    const row = detail.steps.find(function (s) { return s.stepNo === step.n; });
+    const status = row ? row.status : "pending";
+    return '<li class="list-card">' +
+      '<div class="row" style="gap:12px;align-items:flex-start">' +
+        '<span class="mono muted">' + String(step.n).padStart(2, "0") + "</span>" +
+        '<div><p style="font-weight:500">' + esc(step.title) + '</p><p class="muted">' + esc(step.actor) + "</p></div>" +
+      "</div>" +
+      '<div class="no-print" style="min-width:170px">' +
+        selectHtml('data-action="step-status" data-id="' + esc(row ? row.id : "") + '" aria-label="Statut de l\'étape"',
+          optionsFromMap(STEP_STATUS_LABEL), status) +
+      "</div></li>";
+  }).join("");
+
+  return '<div class="stack gap-8">' +
+    '<div class="grid g3">' + pillars + "</div>" +
+    '<ol class="stack gap-2">' + steps + "</ol>" +
+  "</div>";
+}
+
+/* ------------------------------ Formulaires ------------------------------ */
+
+function openLoanModal(operationId) {
+  const body =
+    '<form class="stack gap-3" data-modal-form>' +
+      '<label class="field"><span>Référence</span><input name="reference" required /></label>' +
+      '<label class="field"><span>Libellé débiteur</span><input name="debtorLabel" required /></label>' +
+      '<div class="grid g2">' +
+        '<label class="field"><span>Nominal</span><input name="originalPrincipal" inputmode="numeric" required /></label>' +
+        '<label class="field"><span>Encours</span><input name="outstandingPrincipal" inputmode="numeric" required /></label>' +
+      "</div>" +
+      '<div class="grid g2">' +
+        '<label class="field"><span>Taux (%)</span><input name="interestRate" value="8" /></label>' +
+        '<label class="field"><span>Statut</span>' +
+          selectHtml('name="status"', optionsFromMap(LOAN_STATUS_LABEL, LOAN_STATUSES), "npl") + "</label>" +
+      "</div>" +
+      '<label class="field"><span>Prochaine échéance</span><input name="nextDueDate" type="date" /></label>' +
+      '<label class="field"><span>Notes</span><textarea name="notes" rows="2"></textarea></label>' +
+      '<p class="muted">Libellé anonymisé — pas de nom de personne.</p>' +
+      '<button type="submit" class="btn">Enregistrer</button>' +
+    "</form>";
+
+  openModal("Nouvelle créance", body, function (v) {
+    actions.addLoan(operationId, {
+      reference: v.reference.trim(),
+      debtorLabel: v.debtorLabel.trim(),
+      originalPrincipal: parseNum(v.originalPrincipal),
+      outstandingPrincipal: parseNum(v.outstandingPrincipal),
+      interestRate: parseNum(v.interestRate) / 100,
+      status: v.status,
+      nextDueDate: v.nextDueDate || null,
+      notes: v.notes.trim(),
+    });
+  });
+}
+
+function openCollectionModal(operationId, loanId) {
+  const loan = state.loans.find(function (l) { return l.id === loanId; });
+  if (!loan) return;
+  const body =
+    '<form class="stack gap-3" data-modal-form>' +
+      '<p class="muted">Encours actuel : ' + money(loan.outstandingPrincipal, "XOF") + "</p>" +
+      '<label class="field"><span>Montant (F CFA)</span><input name="amount" inputmode="numeric" required /></label>' +
+      '<label class="field"><span>Date</span><input name="eventDate" type="date" value="' + todayIso() + '" required /></label>' +
+      '<label class="field"><span>Notes</span><input name="notes" /></label>' +
+      '<button type="submit" class="btn">Confirmer</button>' +
+    "</form>";
+
+  openModal("Encaissement — " + loan.reference, body, function (v) {
+    const amount = parseNum(v.amount);
+    if (amount <= 0) throw new Error("Le montant doit être positif.");
+    actions.recordCollection(operationId, loanId, amount, v.eventDate, v.notes.trim());
+  });
+}
+
+function openReportModal(operationId) {
+  const body =
+    '<form class="stack gap-3" data-modal-form>' +
+      '<p class="muted">Les quatre blocs exigés par le manuel.</p>' +
+      '<label class="field"><span>Période</span><input name="period" placeholder="2026-T3" required /></label>' +
+      '<label class="field"><span>Date</span><input name="reportDate" type="date" value="' + todayIso() + '" required /></label>' +
+      '<label class="field"><span>Évolution du risque</span><textarea name="riskSummary" rows="2" required></textarea></label>' +
+      '<label class="field"><span>Statut des remboursements</span><textarea name="repaymentStatus" rows="2" required></textarea></label>' +
+      '<label class="field"><span>Performance vs prévisions</span><textarea name="vsForecast" rows="2" required></textarea></label>' +
+      '<button type="submit" class="btn">Soumettre</button>' +
+    "</form>";
+
+  openModal("Rapport de gestion", body, function (v) {
+    actions.addReport(operationId, {
+      period: v.period.trim(),
+      reportDate: v.reportDate,
+      riskSummary: v.riskSummary.trim(),
+      repaymentStatus: v.repaymentStatus.trim(),
+      vsForecast: v.vsForecast.trim(),
+    });
+  });
+}
+
+function openCorrespondenceModal(operationId) {
+  const body =
+    '<form class="stack gap-3" data-modal-form>' +
+      '<label class="field"><span>Objet</span><input name="subject" required /></label>' +
+      '<label class="field"><span>Date</span><input name="sentAt" type="date" value="' + todayIso() + '" required /></label>' +
+      '<div class="grid g2">' +
+        '<label class="field"><span>Canal</span>' +
+          selectHtml('name="channel"', [{ value: "email", label: "Courriel" }, { value: "registered_mail", label: "Recommandé" }], "email") + "</label>" +
+        '<label class="field"><span>Sens</span>' +
+          selectHtml('name="direction"', [{ value: "outbound", label: "Sortant" }, { value: "inbound", label: "Entrant" }], "outbound") + "</label>" +
+      "</div>" +
+      '<label class="field"><span>Type</span>' +
+        selectHtml('name="kind"', [
+          { value: "info_request", label: "Demande d'informations" },
+          { value: "instruction", label: "Instruction de virement" },
+          { value: "notification", label: "Notification" },
+          { value: "other", label: "Autre" },
+        ], "info_request") + "</label>" +
+      '<label class="check"><input type="checkbox" name="ackReceived" /> Accusé de réception</label>' +
+      '<label class="field"><span>Notes</span><input name="notes" /></label>' +
+      '<button type="submit" class="btn">Enregistrer</button>' +
+    "</form>";
+
+  openModal("Registre des correspondances", body, function (v) {
+    actions.addCorrespondence(operationId, {
+      sentAt: v.sentAt,
+      channel: v.channel,
+      direction: v.direction,
+      subject: v.subject.trim(),
+      ackReceived: Boolean(v.ackReceived),
+      kind: v.kind,
+      notes: v.notes.trim(),
+    });
+  });
+}
+
+/* --------------------------- Export / import ----------------------------- */
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "trs-transactions-" + todayIso() + ".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  toast("Export téléchargé");
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      const parsed = JSON.parse(String(reader.result));
+      COLLECTIONS.forEach(function (k) {
+        if (!Array.isArray(parsed[k])) throw new Error("Fichier invalide : « " + k + " » manquant.");
+      });
+      state = parsed;
+      save();
+      render();
+      toast("Données importées");
+    } catch (err) {
+      toast(err.message || "Import impossible.", true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetData() {
+  if (!confirm("Réinitialiser les données locales et restaurer le jeu d'exemple ? Les saisies non exportées seront perdues.")) return;
+  state = seedState();
+  save();
+  render();
+  toast("Données réinitialisées");
+}
+
+/* --------------------------------- Routeur -------------------------------- */
+
+function parseRoute() {
+  const hash = location.hash.replace(/^#/, "") || "/";
+  const parts = hash.split("/").filter(Boolean);
+  if (parts.length === 0) return { name: "dashboard" };
+  if (parts[0] === "calendrier") return { name: "calendrier" };
+  if (parts[0] === "manuel") return { name: "manuel" };
+  if (parts[0] === "operations") {
+    if (parts.length === 1) return { name: "operations" };
+    if (parts[1] === "new") return { name: "operation-new" };
+    return { name: "operation", id: decodeURIComponent(parts[1]) };
+  }
+  return { name: "dashboard" };
+}
+
+let currentRoute = { name: "dashboard" };
+
+function render() {
+  const route = parseRoute();
+  const changedPage = route.name !== currentRoute.name || route.id !== currentRoute.id;
+  currentRoute = route;
+  renderNav(route);
+
+  const view = document.getElementById("view");
+  view.innerHTML =
+    route.name === "operations" ? viewOperations() :
+    route.name === "operation-new" ? viewNewOperation() :
+    route.name === "operation" ? viewOperation(route.id) :
+    route.name === "calendrier" ? viewCalendrier() :
+    route.name === "manuel" ? viewManuel() :
+    viewDashboard();
+
+  if (route.name === "operation-new") wireNewOperationForm();
+  if (changedPage) window.scrollTo(0, 0);
+  document.body.classList.remove("menu-open");
+  document.getElementById("scrim").classList.add("hidden");
+}
+
+/* ------------------------------- Événements ------------------------------ */
+
+function currentOperationId() {
+  return currentRoute.name === "operation" ? currentRoute.id : null;
+}
+
+document.addEventListener("click", function (event) {
+  const closer = event.target.closest("[data-close-modal]");
+  if (closer) { closeModal(); return; }
+
+  const navLink = event.target.closest("a[data-nav]");
+  if (navLink) {
+    document.body.classList.remove("menu-open");
+    document.getElementById("scrim").classList.add("hidden");
+    return;
+  }
+
+  const el = event.target.closest("[data-action]");
+  if (!el) return;
+  const action = el.getAttribute("data-action");
+  const id = el.getAttribute("data-id");
+  const value = el.getAttribute("data-value");
+  const opId = currentOperationId();
+
+  try {
+    switch (action) {
+      case "tab":
+        ui.tab = value;
+        render();
+        break;
+      case "op-filter":
+        ui.opFilter = value;
+        render();
+        break;
+      case "cal-range":
+        ui.calRange = value;
+        render();
+        break;
+      case "collateral-save": {
+        const input = document.getElementById("collateral-input");
+        actions.setCollateral(opId, parseNum(input.value));
+        break;
+      }
+      case "collateral-fill":
+        actions.setCollateral(opId, Number(value));
+        break;
+      case "loan-add":
+        openLoanModal(opId);
+        break;
+      case "collection":
+        openCollectionModal(opId, id);
+        break;
+      case "cal-done":
+        actions.setCalendarStatus(id, "done");
+        break;
+      case "letter-create": {
+        const detail = operationDetail(opId);
+        const next = nextInstallment(detail);
+        if (!next.dueDate) { toast("Pas d'échéance à instruire.", true); break; }
+        actions.createInstruction(opId, {
+          dueDate: next.dueDate,
+          amount: next.amount,
+          principal: next.principal,
+          interest: next.interest,
+          beneficiary: detail.operation.investorSpv,
+          beneficiaryBank: detail.operation.lenderBank || detail.operation.cedantBank,
+          body: buildLetterBody({
+            operation: detail.operation,
+            dueDate: next.dueDate,
+            amount: next.amount,
+            principal: next.principal,
+            interest: next.interest,
+          }),
+        });
+        break;
+      }
+      case "letter-sent":
+        actions.setInstructionStatus(id, "sent");
+        break;
+      case "letter-executed":
+        actions.setInstructionStatus(id, "executed", true);
+        break;
+      case "letter-preview": {
+        const letter = state.instructions.find(function (i) { return i.id === id; });
+        const op = operationById(letter.operationId);
+        openModal("Lettre d'instruction", letterHtml(op, letter), null, true);
+        break;
+      }
+      case "print":
+        window.print();
+        break;
+      case "report-add":
+        openReportModal(opId);
+        break;
+      case "report-validate":
+        actions.setReportStatus(id, "validated", "Validé par l'acquéreur.");
+        break;
+      case "corr-add":
+        openCorrespondenceModal(opId);
+        break;
+      case "export-data":
+        exportData();
+        break;
+      case "import-data":
+        document.getElementById("import-file").click();
+        break;
+      case "reset-data":
+        resetData();
+        break;
+      default:
+        break;
+    }
+  } catch (err) {
+    toast(err.message || "Action impossible.", true);
+  }
+});
+
+document.addEventListener("change", function (event) {
+  const el = event.target.closest("[data-action]");
+  if (el) {
+    const action = el.getAttribute("data-action");
+    const id = el.getAttribute("data-id");
+    try {
+      if (action === "op-status") actions.setOperationStatus(currentOperationId(), el.value);
+      else if (action === "loan-status") actions.setLoanStatus(id, el.value);
+      else if (action === "step-status") actions.setStepStatus(id, el.value);
+      else if (action === "corr-ack") actions.toggleAck(id, el.checked);
+      else if (action === "tab-select") { ui.tab = el.value; render(); }
+    } catch (err) {
+      toast(err.message || "Action impossible.", true);
+    }
+    return;
+  }
+
+  if (event.target.id === "import-file" && event.target.files && event.target.files[0]) {
+    importData(event.target.files[0]);
+    event.target.value = "";
+  }
+});
+
+document.addEventListener("input", function (event) {
+  if (event.target.id === "op-search") {
+    ui.opQuery = event.target.value;
+    const view = document.getElementById("view");
+    const search = document.getElementById("op-search");
+    const start = search.selectionStart;
+    view.innerHTML = viewOperations();
+    const next = document.getElementById("op-search");
+    if (next) { next.focus(); next.setSelectionRange(start, start); }
+  }
+});
+
+document.addEventListener("submit", function (event) {
+  const form = event.target;
+
+  if (form.hasAttribute("data-modal-form")) {
+    event.preventDefault();
+    const handler = modalSubmit;
+    try {
+      if (handler) handler(formValues(form));
+      closeModal();
+    } catch (err) {
+      toast(err.message || "Enregistrement impossible.", true);
+    }
+    return;
+  }
+
+  if (form.id === "cash-form") {
+    event.preventDefault();
+    const v = formValues(form);
+    try {
+      actions.addCashEvent(currentOperationId(), {
+        kind: v.kind,
+        amount: parseNum(v.amount),
+        eventDate: v.eventDate,
+        status: "confirmed",
+        counterparty: v.counterparty.trim(),
+      });
+    } catch (err) {
+      toast(err.message || "Enregistrement impossible.", true);
+    }
+  }
+});
+
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") closeModal();
+});
+
+document.getElementById("menu-btn").addEventListener("click", function () {
+  document.body.classList.add("menu-open");
+  document.getElementById("scrim").classList.remove("hidden");
+});
+
+document.getElementById("scrim").addEventListener("click", function () {
+  document.body.classList.remove("menu-open");
+  document.getElementById("scrim").classList.add("hidden");
+});
+
+window.addEventListener("hashchange", function () {
+  closeModal();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
