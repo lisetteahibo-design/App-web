@@ -6,7 +6,7 @@ import MobileHeader from "@/components/MobileHeader";
 export const metadata: Metadata = {
   title: "TRS Transactions",
   description: "Suivi des transactions TRS et opérations de cession/recouvrement de créances",
-  icons: { icon: "/logo.svg" },
+  icons: { icon: "/logo-mark.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

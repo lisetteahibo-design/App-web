@@ -29,7 +29,7 @@ export default function NavLink({ href, label, icon }: { href: string; label: st
     <Link
       href={href}
       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-        active ? "bg-white/10 text-white" : "text-navy-200 hover:bg-white/5 hover:text-white"
+        active ? "bg-navy-50 text-navy-900" : "text-gray-500 hover:bg-gray-50 hover:text-navy-800"
       }`}
     >
       {icons[icon]}
